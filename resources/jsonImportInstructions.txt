@@ -1,0 +1,18 @@
+Import Order:
+
+Users
+Restaurant
+Cuisine
+Ingredients
+Equipment
+GroceryStores
+Recipe
+UserAuth
+HasEaten
+Cooks
+BestPairsWith
+TypeOf
+UsingIngredients
+UsingEquip
+SoldBy
+Substitutes
