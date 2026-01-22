@@ -1,0 +1,133 @@
+USE SaltAndSchema
+GO
+CREATE TABLE Users(
+	UserID INT identity(1, 1) PRIMARY KEY,
+	Username nvarchar(20) UNIQUE NOT NULL,
+	Address nvarchar(50) NOT NULL
+);
+GO
+CREATE TABLE Restaurant(
+	RestID INT identity(1, 1) PRIMARY KEY,
+	Name nvarchar(20) NOT NULL,
+	Rating DECIMAL(3, 2),
+	Address nvarchar(50) NOT NULL,
+	CHECK (Rating >= 1 AND Rating <= 5)
+);
+-- Rating will need to be put in a separate view, cannot be stored just on table
+GO
+CREATE TABLE Recipe(
+	RecipeID INT identity(1, 1) PRIMARY KEY,
+	Name nvarchar(20) NOT NULL,
+	ServingSize SMALLINT,
+	AuthorID INT NULL,
+	TypeOfDish nvarchar(10),
+	Calories SMALLINT,
+	Description nvarchar(200),
+	TimeToCook SMALLINT,
+	InstructionSet nvarchar(500)
+);
+GO 
+CREATE TABLE Cuisine(
+	CuisineID INT identity(1, 1) PRIMARY KEY,
+	Name nvarchar(20) NOT NULL,
+	Description nvarchar(200)
+);
+GO
+CREATE TABLE Ingredients(
+	IngredientsID INT identity(1, 1) PRIMARY KEY,
+	Name nvarchar(20) NOT NULL,
+	Description nvarchar(200)
+);
+GO
+CREATE TABLE Equipment(
+	EquipID INT identity(1, 1) PRIMARY KEY,
+	Name nvarchar(20) NOT NULL,
+	Description nvarchar(200)
+);
+GO
+CREATE TABLE GroceryStores(
+	StoreID INT identity(1, 1) PRIMARY KEY,
+	Name nvarchar(20) NOT NULL,
+	Address nvarchar(50) NOT NULL
+);
+GO
+CREATE TABLE HasEaten(
+	UserID INT REFERENCES Users(UserID),
+	RecipeID INT REFERENCES Recipe(RecipeID),
+	Favorites BIT NOT NULL,
+	Stars INT,
+	CHECK(Stars >= 1 AND Stars <= 5),
+	PRIMARY KEY (UserID, RecipeID)
+);
+GO
+CREATE TABLE Cooks(
+	RestaurantID INT REFERENCES Restaurant(RestID),
+	RecipeID INT REFERENCES Recipe(RecipeID),
+	CostOfItem MONEY,
+	PRIMARY KEY (RestaurantID, RecipeID)
+);
+GO
+CREATE TABLE BestPairsWith(
+	MainRecipeID INT REFERENCES Recipe(RecipeID),
+	SideRecipeID INT REFERENCES Recipe(RecipeID),
+	CHECK(MainRecipeID <> SideRecipeID),
+	PRIMARY KEY (MainRecipeID, SideRecipeID)
+);
+GO
+CREATE TABLE TypeOf(
+	CuisineID INT REFERENCES Cuisine(CuisineID),
+	RecipeID INT REFERENCES Recipe(RecipeID),
+	PRIMARY KEY (CuisineID, RecipeID)
+);
+GO
+CREATE TABLE UsingIngredients(
+	IngredientID INT REFERENCES Ingredients(IngredientsID),
+	RecipeID INT REFERENCES Recipe(RecipeID),
+	Quantity SMALLINT NOT NULL,
+	PRIMARY KEY (IngredientID, RecipeID)
+);
+GO
+CREATE TABLE UsingEquip(
+	RecipeID INT REFERENCES Recipe(RecipeID),
+	EquipmentID INT REFERENCES Equipment(EquipID),
+	PRIMARY KEY (RecipeID, EquipmentID)
+);
+GO
+CREATE TABLE SoldBy(
+	IngredientID INT REFERENCES Ingredients(IngredientsID),
+	StoreID INT REFERENCES GroceryStores(StoreID),
+	Price MONEY NOT NULL,
+	PRIMARY KEY (IngredientID, StoreID)
+);
+GO
+CREATE TABLE Substitutes(
+	IngredientID INT REFERENCES Ingredients(IngredientsID),
+	SubstituteID INT REFERENCES Ingredients(IngredientsID),
+	CHECK(IngredientID <> SubstituteID),
+	PRIMARY KEY (IngredientID, SubstituteID)
+);
+GO
+CREATE TABLE UserAuth(
+    UserID INT PRIMARY KEY REFERENCES Users(UserID),
+    PasswordHash VARBINARY(64) NOT NULL,
+    Salt VARBINARY(32) NOT NULL
+);
+GO
+ALTER TABLE Restaurant
+ADD CONSTRAINT UQ_Restaurant_Name_Address UNIQUE (Name, Address);
+GO
+ALTER TABLE Equipment
+ADD CONSTRAINT UQ_Equipment_Name UNIQUE (Name);
+GO
+ALTER TABLE Cuisine
+ADD CONSTRAINT UQ_Cuisine_Name UNIQUE (Name);
+GO
+ALTER TABLE GroceryStores
+ADD CONSTRAINT UQ_GroceryStore_Name_Address UNIQUE (Name, Address);
+GO
+ALTER TABLE Ingredients
+ADD CONSTRAINT UQ_Ingredient_Name UNIQUE (Name);
+GO
+
+
+	

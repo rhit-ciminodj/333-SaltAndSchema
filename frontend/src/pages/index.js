@@ -1,0 +1,10 @@
+export { HomePage } from './HomePage';
+export { RecipesPage } from './RecipesPage';
+export { RecipeDetailPage } from './RecipeDetailPage';
+export { RestaurantsPage } from './RestaurantsPage';
+export { RestaurantDetailPage } from './RestaurantDetailPage';
+export { IngredientsPage } from './IngredientsPage';
+export { IngredientDetailPage } from './IngredientDetailPage';
+export { StoresPage } from './StoresPage';
+export { StoreDetailPage } from './StoreDetailPage';
+export { ProfilePage } from './ProfilePage';

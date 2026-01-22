@@ -1,0 +1,18 @@
+CREATE DATABASE [SaltAndSchema]
+ON
+PRIMARY ( 
+NAME=[Data], 
+FILENAME='/var/opt/mssql/data/saltAndSchemaData.mdf', 
+SIZE=70MB,
+MAXSIZE=300MB,
+FILEGROWTH=10%
+) 
+LOG ON 
+( 
+NAME=[Log], 
+FILENAME= '/var/opt/mssql/data/saltAndSchemaLog.ldf',
+SIZE=30MB,
+MAXSIZE=100MB,
+FILEGROWTH=10%
+)
+COLLATE SQL_Latin1_General_Cp1_CI_AS

@@ -1,0 +1,106 @@
+USE [SaltAndSchema]
+GO
+CREATE OR ALTER VIEW vw_RecipeRatings 
+AS
+SELECT
+    r.RecipeID,
+    r.Name AS RecipeName,
+    AVG(CAST(h.Stars AS FLOAT)) AS AvgStars,
+    COUNT(h.Stars) AS NumReviews
+FROM Recipe r
+LEFT JOIN HasEaten h ON r.RecipeID = h.RecipeID
+GROUP BY r.RecipeID, r.Name;
+GO
+CREATE OR ALTER VIEW vw_RecipeDetails
+AS
+SELECT
+	r.Name AS RecipeName,
+	r.ServingSize,
+	u.Username AS Author,
+	r.TypeOfDish,
+	r.Calories,
+	r.TimeToCook,
+	r.Description,
+	r.InstructionSet
+FROM Recipe r
+LEFT JOIN Users u ON (u.UserID = r.AuthorID)
+GO
+CREATE OR ALTER VIEW vw_RecipeIngredients
+AS
+SELECT
+	i.Name AS IngredientName,
+	r.Name AS RecipeName,
+	ui.Quantity
+FROM UsingIngredients ui
+JOIN Recipe r ON r.RecipeID = ui.RecipeID
+JOIN Ingredients i ON i.IngredientsID = ui.IngredientID
+GO
+CREATE OR ALTER VIEW vw_RecipeEquipment
+AS
+SELECT
+	r.Name AS RecipeName,
+	e.Name AS EquipmentName
+FROM UsingEquip ue
+JOIN Recipe r ON r.RecipeID = ue.RecipeID
+JOIN Equipment e ON e.EquipID = ue.EquipmentID
+GO
+CREATE OR ALTER VIEW vw_RecipeCuisine
+AS
+SELECT
+	r.Name AS RecipeName,
+	c.Name AS CuisineName
+FROM TypeOf t
+JOIN Recipe r ON r.RecipeID = t.RecipeID
+JOIN Cuisine c ON c.CuisineID = t.CuisineID
+GO
+CREATE OR ALTER VIEW vw_UserHistory
+AS
+SELECT
+	u.Username,
+	r.Name AS RecipeName,
+	h.Favorites,
+	h.Stars
+FROM HasEaten h
+JOIN Users u ON h.UserID = u.UserID
+JOIN Recipe r ON r.RecipeID = h.RecipeID
+GO
+CREATE OR ALTER VIEW vw_UserFavorites
+AS
+SELECT
+	u.Username,
+	r.Name AS RecipeName
+FROM HasEaten h
+JOIN Users u ON h.UserID = u.UserID
+JOIN Recipe r ON r.RecipeID = h.RecipeID
+WHERE h.Favorites = 1
+GO
+CREATE OR ALTER VIEW vw_IngredientPrices
+AS
+SELECT
+	i.Name AS Ingredient,
+	sb.Price,
+	g.Name AS GroceryStore,
+	g.Address
+FROM
+SoldBy sb
+JOIN Ingredients i ON i.IngredientsID = sb.IngredientID
+JOIN GroceryStores g ON g.StoreID = sb.StoreID
+GO
+CREATE OR ALTER VIEW vw_IngredientSubstitutes
+AS
+SELECT
+	i1.Name AS Main,
+	i2.Name AS Side
+FROM
+Substitutes s
+JOIN Ingredients i1 ON i1.IngredientsID = s.IngredientID
+JOIN Ingredients i2 ON i2.IngredientsID = s.SubstituteID
+GO
+CREATE OR ALTER VIEW vw_RecipePairs
+AS
+SELECT
+	r1.Name AS MainRecipe,
+	r2.Name AS SideRecipe
+FROM BestPairsWith b
+JOIN Recipe r1 ON b.MainRecipeID = r1.RecipeID
+JOIN Recipe r2 ON b.SideRecipeID = r2.RecipeID

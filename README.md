@@ -45,19 +45,10 @@ The frontend is built with React and Tailwind CSS using Vite for fast developmen
 - **Build Tool**: Vite
 - **Linting**: ESLint
 
-You can use AI assistance for frontend development.
 
 ### Backend Development
 
-The `backend/` directory is reserved for your custom data manipulation code.
-
-**Important**: All backend data manipulation must be your own work.
-
-Add your backend implementation with:
-- Database connections
-- API endpoints
-- Data models
-- Business logic
+= **NYI**
 
 ## Available Scripts (Frontend)
 
@@ -69,10 +60,8 @@ Add your backend implementation with:
 ## Technologies
 
 - **Frontend**: React, Tailwind CSS, Vite
-- **Backend**: (Your choice - Node.js, Python, Java, etc.)
 
 ## Notes
 
-- Frontend can leverage AI for assistance
-- Backend data manipulation should be implemented by you
+- Frontend Leverages AI For assistance
 - Keep frontend and backend separated for clear responsibility boundaries
