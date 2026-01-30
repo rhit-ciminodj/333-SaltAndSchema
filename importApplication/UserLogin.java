@@ -55,7 +55,6 @@ public class UserLogin {
 	}
 
     public boolean register(String username, String password) {
-		//TODO: Task 7
 		byte[] data = getNewSalt();
 		String salt = getStringFromBytes(data);
 		String hash = hashPassword(getNewSalt(), password);
