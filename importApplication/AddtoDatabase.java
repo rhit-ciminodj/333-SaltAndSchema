@@ -105,12 +105,12 @@ public class AddtoDatabase {
 			return false;
 		}
 	}
-	public Boolean changeAddress(int RestaurantID, String newAddress) {	
+	public Boolean changeAddress(int userID, String newAddress) {	
 		try {
 			CallableStatement stmt;
 			stmt = dbService.getConnection().prepareCall("{? = call changeAddress(?,?)}");
 			stmt.registerOutParameter(1, java.sql.Types.INTEGER);
-			stmt.setInt(2, RestaurantID);
+			stmt.setInt(2, userID);
 			stmt.setString(3, newAddress);
 
 			stmt.execute();
@@ -126,13 +126,14 @@ public class AddtoDatabase {
 			return false;
 		}
 	}
-	public Boolean changePriceOfItem(int MenuItemID, double newPrice) {	
+	public Boolean changePriceOfItem(int RestaurantID,int RecipeID, double newCost) {	
 		try {
 			CallableStatement stmt;
-			stmt = dbService.getConnection().prepareCall("{? = call changePriceOfItem(?,?)}");
+			stmt = dbService.getConnection().prepareCall("{? = call changePriceOfItem(?,?,?)}");
 			stmt.registerOutParameter(1, java.sql.Types.INTEGER);
-			stmt.setInt(2, MenuItemID);
-			stmt.setDouble(3, newPrice);
+			stmt.setInt(2, RestaurantID);
+			stmt.setInt(3, RecipeID);
+			stmt.setDouble(4, newCost);		
 
 			stmt.execute();
 			return true;
@@ -209,13 +210,14 @@ public class AddtoDatabase {
 			return false;
 		}
 	}
-	public Boolean linkRecipeToRestaurant(int RecipeID, int RestaurantID) {	
+	public Boolean linkRecipeToRestaurant(int RestID, int RecipeID, double money) {	
 		try {
 			CallableStatement stmt;
-			stmt = dbService.getConnection().prepareCall("{? = call linkRecipeToRestaurant(?,?)}");
-			stmt.registerOutParameter(1, java.sql.Types.INTEGER);
-			stmt.setInt(2, RecipeID);
-			stmt.setInt(3, RestaurantID);
+			stmt = dbService.getConnection().prepareCall("	{? = call linkRecipeToRestaurant(?,?,?)}");
+			stmt.registerOutParameter(1, java.sql.Types.INTEGER);	
+			stmt.setInt(2, RestID);
+			stmt.setInt(3, RecipeID);
+			stmt.setDouble(4, money);
 
 			stmt.execute();
 			return true;
@@ -251,13 +253,13 @@ public class AddtoDatabase {
 			return false;
 		}
 	}
-	public Boolean newEquipment(String EquipmentName) {	
+	public Boolean newEquipment(String EquipmentName, String Description) {	
 		try {
 			CallableStatement stmt;
-			stmt = dbService.getConnection().prepareCall("{? = call newEquipment(?)}");
+			stmt = dbService.getConnection().prepareCall("{? = call newEquipment(?,?)}");
 			stmt.registerOutParameter(1, java.sql.Types.INTEGER);
 			stmt.setString(2, EquipmentName);
-
+			stmt.setString(3, Description);
 			stmt.execute();
 			return true;
 		} catch (SQLException e) {
@@ -292,13 +294,13 @@ public class AddtoDatabase {
 			return false;
 		}
 	}
-	public Boolean newPair(int IngredientID1, int IngredientID2) {	
+	public Boolean newPair(int MainID, int SideID) {	
 		try {
 			CallableStatement stmt;
 			stmt = dbService.getConnection().prepareCall("{? = call newPair(?,?)}");
 			stmt.registerOutParameter(1, java.sql.Types.INTEGER);
-			stmt.setInt(2, IngredientID1);
-			stmt.setInt(3, IngredientID2);
+			stmt.setInt(2, MainID);
+			stmt.setInt(3, SideID);
 
 			stmt.execute();
 			return true;
@@ -363,13 +365,13 @@ public class AddtoDatabase {
 			return false;
 		}
 	}
-	public Boolean newUser(String Username, String Password) {	
+	public Boolean newUser(String Username, String Address) {	
 		try {
 			CallableStatement stmt;
 			stmt = dbService.getConnection().prepareCall("{? = call newUser(?,?)}");
 			stmt.registerOutParameter(1, java.sql.Types.INTEGER);
 			stmt.setString(2, Username);
-			stmt.setString(3, Password);
+			stmt.setString(3, Address);
 
 			stmt.execute();
 			return true;
@@ -384,13 +386,14 @@ public class AddtoDatabase {
 			return false;
 		}
 	}
-	public Boolean soldByStore(int IngredientID, int StoreID) {	
+	public Boolean soldByStore(int IngredientID, int StoreID, double money) {	
 		try {
 			CallableStatement stmt;
-			stmt = dbService.getConnection().prepareCall("{? = call soldByStore(?,?)}");
+			stmt = dbService.getConnection().prepareCall("{? = call soldByStore(?,?,?)}");
 			stmt.registerOutParameter(1, java.sql.Types.INTEGER);
 			stmt.setInt(2, IngredientID);
 			stmt.setInt(3, StoreID);
+			stmt.setDouble(4, money);
 
 			stmt.execute();
 			return true;
@@ -405,13 +408,41 @@ public class AddtoDatabase {
 			return false;
 		}
 	}
-	public Boolean userHasEaten(int UserID, int RecipeID) {	
+	public boolean updateRecipe(int recipeID, int ServingSize, String typeOfDish, int Calories, String Description, int timeToCook, String Instruction){
 		try {
 			CallableStatement stmt;
-			stmt = dbService.getConnection().prepareCall("{? = call userHasEaten(?,?)}");
+			stmt = dbService.getConnection().prepareCall("{? = call updateRecipe(?,?,?,?,?,?,?)}");
+			stmt.registerOutParameter(1, java.sql.Types.INTEGER);
+			stmt.setInt(2, recipeID);
+			stmt.setInt(3, ServingSize);
+			stmt.setString(4, typeOfDish);
+			stmt.setInt(5, Calories);
+			stmt.setString(6, Description);
+			stmt.setInt(7, timeToCook);
+			stmt.setString(8, Instruction);
+
+			stmt.execute();
+			return true;
+		} catch (SQLException e) {
+			if(e.getErrorCode() == 51021) {
+				e.printStackTrace();
+			}
+			if(e.getErrorCode() == 51022) {
+				e.printStackTrace();
+			}
+			e.printStackTrace();
+			return false;
+		}
+	}
+	public Boolean userHasEaten(int UserID, int RecipeID, int Favorites, int Stars) {	
+		try {
+			CallableStatement stmt;
+			stmt = dbService.getConnection().prepareCall("{? = call userHasEaten(?,?,?,?)}");
 			stmt.registerOutParameter(1, java.sql.Types.INTEGER);
 			stmt.setInt(2, UserID);
 			stmt.setInt(3, RecipeID);
+			stmt.setInt(4, Favorites);
+			stmt.setInt(5, Stars);
 
 			stmt.execute();
 			return true;
