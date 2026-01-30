@@ -22,23 +22,23 @@ END
 GO
 CREATE OR ALTER PROCEDURE newRestaurant
 (
-	@Name nvarchar(20),
-	@Rating decimal(3,2) = 1,
-	@Address nvarchar(50)
+    @Name nvarchar(20),
+    @Rating decimal(3,2) = 1,
+    @Address nvarchar(50)
 )
 AS
 BEGIN
-	IF (@Name IS NULL OR @Address IS NULL)
-	BEGIN;
-		THROW 51003, 'Null Input', 1
-		RETURN
-	END
-	IF EXISTS (SELECT 1 FROM Restaurant r WHERE r.Name = @Name AND r.Address = @Address)
-	BEGIN;
-		THROW 51004, 'Restaurant already exists', 1
-		RETURN
-	END
-	INSERT INTO Restaurant ([Name], Rating, [Address]) VALUES (@Name, @Rating, @Address)
+    IF (@Name IS NULL OR @Address IS NULL)
+    BEGIN;
+        THROW 51003, 'Null Input', 1
+        RETURN
+    END
+    IF EXISTS (SELECT 1 FROM Restaurant r WHERE r.Name = @Name AND r.Address = @Address)
+    BEGIN;
+        THROW 51004, 'Restaurant already exists', 1
+        RETURN
+    END
+    INSERT INTO Restaurant ([Name], Rating, [Address]) VALUES (@Name, @Rating, @Address)
 END
 GO
 CREATE OR ALTER PROCEDURE newEquipment

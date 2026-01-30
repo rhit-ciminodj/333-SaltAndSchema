@@ -25,11 +25,24 @@ public class RestaurantController {
     }
 
     @PostMapping
-    public void createRestaurant(@RequestBody Restaurant restaurant) {
-        restaurantRepository.newRestaurant(
-            restaurant.getName(),
-            restaurant.getRating(),
-            restaurant.getAddress()
-        );
+    public Response createRestaurant(@RequestBody Restaurant restaurant) {
+        try {
+            restaurantRepository.newRestaurant(
+                    restaurant.getName(),
+                    restaurant.getRating(),
+                    restaurant.getAddress()
+            );
+            return new Response("Restaurant created successfully!");
+        } catch (Exception e) {
+            return new Response("Error: " + e.getMessage());
+        }
+    }
+    public static class Response {
+        private String message;
+
+        public Response() {}
+        public Response(String message) { this.message = message; }
+        public String getMessage() { return message; }
+        public void setMessage(String message) { this.message = message; }
     }
 }
