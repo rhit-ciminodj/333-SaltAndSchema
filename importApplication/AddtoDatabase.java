@@ -230,12 +230,13 @@ public class AddtoDatabase {
 			return false;
 		}
 	}
-	public Boolean newCuisine(String CuisineName) {	
+	public Boolean newCuisine(String CuisineName, String Description) {	
 		try {
 			CallableStatement stmt;
-			stmt = dbService.getConnection().prepareCall("{? = call newCuisine(?)}");
+			stmt = dbService.getConnection().prepareCall("{? = call newCuisine(?,?)}");
 			stmt.registerOutParameter(1, java.sql.Types.INTEGER);
 			stmt.setString(2, CuisineName);
+			stmt.setString(3, Description);
 
 			stmt.execute();
 			return true;

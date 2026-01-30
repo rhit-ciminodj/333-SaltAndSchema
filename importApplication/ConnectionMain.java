@@ -26,11 +26,13 @@ public class ConnectionMain {
             .replace("${dbName}", this.databaseName)
             .replace("${user}", user)
             .replace("${pass}", pass);
+			System.out.println("\nfullUrl = " + fullUrl);
 
 		try {
 			this.connection = DriverManager.getConnection(fullUrl);
 			return true;
 		} catch (SQLException e) {
+			e.printStackTrace();
 			return false;
 		}
 	}

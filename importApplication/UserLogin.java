@@ -1,9 +1,12 @@
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.KeySpec;
 import java.sql.CallableStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Base64;
+import java.util.Random;
 
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
@@ -12,6 +15,9 @@ import javax.swing.JOptionPane;
 public class UserLogin {
 
     private ConnectionMain dbService = null;
+	private static final Random RANDOM = new SecureRandom();
+	private static final Base64.Encoder enc = Base64.getEncoder();
+	private static final Base64.Decoder dec = Base64.getDecoder();
     
     public UserLogin(ConnectionMain dbService) {
         this.dbService = dbService;
