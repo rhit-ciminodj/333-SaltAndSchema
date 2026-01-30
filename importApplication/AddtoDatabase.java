@@ -344,10 +344,11 @@ public class AddtoDatabase {
 	public Boolean newRestaurant(String RestaurantName, double rating, String Address) {	
 		try {
 			CallableStatement stmt;
-			stmt = dbService.getConnection().prepareCall("{? = call newRestaurant(?,?)}");
+			stmt = dbService.getConnection().prepareCall("{? = call newRestaurant(?,?,?)}");
 			stmt.registerOutParameter(1, java.sql.Types.INTEGER);
 			stmt.setString(2, RestaurantName);
-			stmt.setString(3, Address);
+			stmt.setDouble(3, rating);
+			stmt.setString(4, Address);
 
 			stmt.execute();
 			return true;
