@@ -1,7 +1,6 @@
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Properties;
 
 // public class Main {
@@ -44,9 +43,14 @@ public class Main {
 			
 
 		if (dbService.connect(serverUsername, serverPassword)) {
-			System.out.println("Connection could not be made");
-		} else {
 			System.out.println("Connection Established");
+			Importer importer = new Importer(dbService);
+			importer.Import();
+			dbService.closeConnection();
+			System.out.println("finished imports");
+		} else {
+			System.out.println("Connection could not be made");
+			System.exit(1);
 		}
 
 	}
