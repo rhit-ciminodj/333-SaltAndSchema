@@ -1,6 +1,9 @@
+import java.io.IOException;
+import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Properties;
 
 public class ConnectionMain {
 
@@ -8,13 +11,14 @@ public class ConnectionMain {
 
 	private Connection connection = null;
 
-	private final String databaseName;
-	private final String serverName;
+	private String databaseName;
+	private String serverName;
 
 	public ConnectionMain(String serverName, String databaseName) {
 		this.serverName = serverName;
 		this.databaseName = databaseName;
 	}
+
 
 	public boolean connect(String user, String pass) {
 		String fullUrl = url
@@ -45,5 +49,7 @@ public class ConnectionMain {
             System.err.println("Error closing connection: " + e.getMessage());
         }
 	}
+		
+
 
 };
