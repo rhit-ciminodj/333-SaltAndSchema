@@ -313,7 +313,7 @@ public class AddtoDatabase {
 			return false;
 		}
 	}
-	public Boolean newRecipe(String RecipeName, String Instructions) {	
+	public Boolean newRecipe(String RecipeName, int ServingSize, int UserAuthorID,int RestaurantAuthorID, String TypeOfDish, int Calories,String Description, int TimeToCook, String Instructions) {	
 		try {
 			CallableStatement stmt;
 			stmt = dbService.getConnection().prepareCall("{? = call newRecipe(?,?)}");
