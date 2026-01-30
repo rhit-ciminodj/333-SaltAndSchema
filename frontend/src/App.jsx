@@ -12,6 +12,8 @@ import {
   StoreDetailPage,
   ProfilePage,
 } from './pages';
+import DemoPage from "./pages/demopage";
+
 
 function App() {
   return (
@@ -28,6 +30,7 @@ function App() {
           <Route path="stores" element={<StoresPage />} />
           <Route path="stores/:id" element={<StoreDetailPage />} />
           <Route path="profile" element={<ProfilePage />} />
+          <Route path="demo" element={<DemoPage />} />
         </Route>
       </Routes>
     </Router>
