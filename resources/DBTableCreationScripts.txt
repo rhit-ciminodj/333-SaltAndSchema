@@ -19,7 +19,8 @@ CREATE TABLE Recipe(
 	RecipeID INT identity(1, 1) PRIMARY KEY,
 	Name nvarchar(20) NOT NULL,
 	ServingSize SMALLINT,
-	AuthorID INT NULL,
+	UserAuthorID INT NULL,
+	RestaurantAuthorId INT NULL,
 	TypeOfDish nvarchar(10),
 	Calories SMALLINT,
 	Description nvarchar(200),
@@ -53,62 +54,62 @@ CREATE TABLE GroceryStores(
 GO
 CREATE TABLE HasEaten(
 	UserID INT REFERENCES Users(UserID),
-	RecipeID INT REFERENCES Recipe(RecipeID),
+	RecipeID INT REFERENCES Recipe(RecipeID) ON DELETE CASCADE,
 	Favorites BIT NOT NULL,
 	Stars INT,
-	CHECK(Stars >= 1 AND Stars <= 5),
+	CHECK(Stars IS NULL OR Stars BETWEEN 1 AND 5),
 	PRIMARY KEY (UserID, RecipeID)
 );
 GO
 CREATE TABLE Cooks(
-	RestaurantID INT REFERENCES Restaurant(RestID),
-	RecipeID INT REFERENCES Recipe(RecipeID),
+	RestaurantID INT REFERENCES Restaurant(RestID) ON DELETE CASCADE,
+	RecipeID INT REFERENCES Recipe(RecipeID) ON DELETE CASCADE,
 	CostOfItem MONEY,
 	PRIMARY KEY (RestaurantID, RecipeID)
 );
 GO
 CREATE TABLE BestPairsWith(
-	MainRecipeID INT REFERENCES Recipe(RecipeID),
-	SideRecipeID INT REFERENCES Recipe(RecipeID),
+	MainRecipeID INT REFERENCES Recipe(RecipeID) ON DELETE CASCADE,
+	SideRecipeID INT REFERENCES Recipe(RecipeID) ON DELETE NO ACTION,
 	CHECK(MainRecipeID <> SideRecipeID),
 	PRIMARY KEY (MainRecipeID, SideRecipeID)
 );
 GO
 CREATE TABLE TypeOf(
-	CuisineID INT REFERENCES Cuisine(CuisineID),
-	RecipeID INT REFERENCES Recipe(RecipeID),
+	CuisineID INT REFERENCES Cuisine(CuisineID) ON DELETE CASCADE,
+	RecipeID INT REFERENCES Recipe(RecipeID) ON DELETE CASCADE,
 	PRIMARY KEY (CuisineID, RecipeID)
 );
 GO
 CREATE TABLE UsingIngredients(
-	IngredientID INT REFERENCES Ingredients(IngredientsID),
-	RecipeID INT REFERENCES Recipe(RecipeID),
+	IngredientID INT REFERENCES Ingredients(IngredientsID) ON DELETE CASCADE,
+	RecipeID INT REFERENCES Recipe(RecipeID) ON DELETE CASCADE,
 	Quantity SMALLINT NOT NULL,
 	PRIMARY KEY (IngredientID, RecipeID)
 );
 GO
 CREATE TABLE UsingEquip(
-	RecipeID INT REFERENCES Recipe(RecipeID),
-	EquipmentID INT REFERENCES Equipment(EquipID),
+	RecipeID INT REFERENCES Recipe(RecipeID) ON DELETE CASCADE,
+	EquipmentID INT REFERENCES Equipment(EquipID) ON DELETE CASCADE,
 	PRIMARY KEY (RecipeID, EquipmentID)
 );
 GO
 CREATE TABLE SoldBy(
-	IngredientID INT REFERENCES Ingredients(IngredientsID),
-	StoreID INT REFERENCES GroceryStores(StoreID),
+	IngredientID INT REFERENCES Ingredients(IngredientsID) ON DELETE CASCADE,
+	StoreID INT REFERENCES GroceryStores(StoreID) ON DELETE CASCADE,
 	Price MONEY NOT NULL,
 	PRIMARY KEY (IngredientID, StoreID)
 );
 GO
 CREATE TABLE Substitutes(
-	IngredientID INT REFERENCES Ingredients(IngredientsID),
-	SubstituteID INT REFERENCES Ingredients(IngredientsID),
+	IngredientID INT REFERENCES Ingredients(IngredientsID) ON DELETE CASCADE,
+	SubstituteID INT REFERENCES Ingredients(IngredientsID) ON DELETE NO ACTION,
 	CHECK(IngredientID <> SubstituteID),
 	PRIMARY KEY (IngredientID, SubstituteID)
 );
 GO
 CREATE TABLE UserAuth(
-    UserID INT PRIMARY KEY REFERENCES Users(UserID),
+    UserID INT PRIMARY KEY REFERENCES Users(UserID) ON DELETE CASCADE,
     PasswordHash VARBINARY(64) NOT NULL,
     Salt VARBINARY(32) NOT NULL
 );
@@ -128,6 +129,23 @@ GO
 ALTER TABLE Ingredients
 ADD CONSTRAINT UQ_Ingredient_Name UNIQUE (Name);
 GO
-
-
+ALTER TABLE Recipe
+ADD CONSTRAINT CK_Recipe_ExactlyOneAuthor
+CHECK (
+    (UserAuthorID IS NOT NULL AND RestaurantAuthorID IS NULL)
+ OR (UserAuthorID IS NULL AND RestaurantAuthorID IS NOT NULL)
+)
+GO
+ALTER TABLE Recipe 
+ADD CONSTRAINT fk_RecipeUserAuthor
+FOREIGN KEY  (UserAuthorID)
+REFERENCES Users(UserID)
+ON DELETE CASCADE
+GO
+ALTER TABLE Recipe 
+ADD CONSTRAINT fk_RecipeRestaurantAuthor
+FOREIGN KEY  (RestaurantAuthorID)
+REFERENCES Restaurant(RestID)
+ON DELETE NO ACTION
+GO
 	

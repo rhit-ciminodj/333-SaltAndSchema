@@ -1,0 +1,22 @@
+-- Right now, only makes sense to delete a user. Deleting a restaurant doesn't make sense, nor does anything else.
+
+CREATE OR ALTER PROCEDURE DeleteUser(
+	@userID int
+)
+AS
+BEGIN
+	IF (@userID IS NULL)
+	BEGIN;
+		THROW 51000, 'userID cannot be null', 1
+		RETURN
+	END
+	IF NOT EXISTS (SELECT 1 FROM Users u WHERE u.UserID = @userID)
+	BEGIN;
+		THROW 51001, 'User does not exist.', 1
+		RETURN
+	END
+	-- Cascades to delete all of the users recipes, which will cascade and delete their recipes from other peoples has eaten history
+	DELETE 
+	FROM Users
+	WHERE UserID = @userID
+END

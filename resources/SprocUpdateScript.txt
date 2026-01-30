@@ -1,0 +1,142 @@
+CREATE OR ALTER PROCEDURE changeUsername(
+	@userID int,
+	@newUsername nvarchar(20)
+)
+AS
+BEGIN
+	IF(@userID IS NULL OR @newUsername IS NULL)
+	BEGIN;
+		THROW 51000, 'Null Input', 1
+		RETURN
+	END
+
+	IF NOT EXISTS (SELECT 1 FROM Users u WHERE u.UserID = @userID)
+	BEGIN;
+		THROW 51001, 'User does not exist.', 1
+		RETURN
+	END
+
+	UPDATE Users
+	SET Username = @newUsername
+	WHERE UserID = @userID
+END
+GO
+CREATE OR ALTER PROCEDURE changeAddress(
+	@userID int,
+	@newAddress nvarchar(50)
+)
+AS
+BEGIN
+	IF(@userID IS NULL OR @newAddress IS NULL)
+	BEGIN;
+		THROW 51002, 'Null Input', 1
+		RETURN
+	END
+
+	IF NOT EXISTS(SELECT 1 FROM Users u WHERE u.UserID = @userID)
+	BEGIN;
+		THROW 51003, 'User does not exist.', 1
+		RETURN
+	END
+
+	UPDATE Users
+	SET [Address] = @newAddress
+	WHERE UserID = @userID
+END
+GO
+CREATE OR ALTER PROCEDURE changePriceOfItem(
+	@RestaurantID int,
+	@RecipeID int,
+	@newCost money
+)
+AS
+BEGIN
+	IF(@RecipeID IS NULL OR @RestaurantID IS NULL OR @newCost IS NULL)
+	BEGIN;
+		THROW 51004, 'Null Input', 1
+		RETURN
+	END
+
+	IF NOT EXISTS(SELECT 1 FROM Restaurant r WHERE r.RestID = @RestaurantID)
+	BEGIN;
+		THROW 51005, 'Restaurant does not exist', 1
+		RETURN
+	END
+
+	IF NOT EXISTS(SELECT 1 FROM Recipe ri WHERE ri.RecipeID = @RecipeID)
+	BEGIN;
+		THROW 51006, 'Recipe does not exist', 1
+		RETURN
+	END
+
+	UPDATE Cooks
+	SET [CostOfItem] = @newCost
+	WHERE RecipeID = @RecipeID AND RestaurantID = @RestaurantID
+END
+GO
+CREATE OR ALTER PROCEDURE updateRecipe(
+	@recipeID int,
+	@newServingSize smallint = null,
+	@newTypeOfDish nvarchar(10) = null,
+	@newCalories smallint = null,
+	@newDescription nvarchar(200) = null,
+	@newTimeToCook smallint = null,
+	@newInstructionSet nvarchar(500) = null
+)
+AS
+BEGIN
+	IF(@recipeID IS NULL)
+	BEGIN;
+		THROW 51007,'Null Input', 1
+		RETURN
+	END
+
+	IF NOT EXISTS(SELECT 1 FROM Recipe r WHERE r.RecipeID = @recipeID)
+	BEGIN;
+		THROW 51008, 'Recipe does not exist', 1
+		RETURN
+	END
+
+	IF(@newCalories <> null)
+	BEGIN
+		UPDATE Recipe
+		SET Calories = @newCalories
+		WHERE RecipeID = @recipeID
+	END
+
+	IF(@newTypeOfDish <> null)
+	BEGIN
+		UPDATE Recipe
+		SET TypeOfDish = @newTypeOfDish
+		WHERE RecipeID = @recipeID
+	END
+
+	IF(@newServingSize <> null)
+	BEGIN
+		UPDATE Recipe
+		SET ServingSize = @newServingSize
+		WHERE RecipeID = @recipeID
+	END
+
+	IF(@newDescription <> null)
+	BEGIN
+		UPDATE Recipe
+		SET [Description] = @newDescription
+		WHERE RecipeID = @recipeID
+	END
+
+	IF(@newTimeToCook <> null)
+	BEGIN
+		UPDATE Recipe
+		SET TimeToCook = @newTimeToCook
+		WHERE RecipeID = @recipeID
+	END
+
+	IF(@newInstructionSet <> null)
+	BEGIN
+		UPDATE Recipe
+		SET InstructionSet = @newInstructionSet
+		WHERE RecipeID = @recipeID
+	END
+END
+GO	
