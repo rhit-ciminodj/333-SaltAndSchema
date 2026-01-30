@@ -316,10 +316,17 @@ public class AddtoDatabase {
 	public Boolean newRecipe(String RecipeName, int ServingSize, int UserAuthorID,int RestaurantAuthorID, String TypeOfDish, int Calories,String Description, int TimeToCook, String Instructions) {	
 		try {
 			CallableStatement stmt;
-			stmt = dbService.getConnection().prepareCall("{? = call newRecipe(?,?)}");
+			stmt = dbService.getConnection().prepareCall("{? = call newRecipe(?,?,?,?,?,? ,?,?,?)}");
 			stmt.registerOutParameter(1, java.sql.Types.INTEGER);
 			stmt.setString(2, RecipeName);
-			stmt.setString(3, Instructions);
+			stmt.setInt(3, ServingSize);
+			stmt.setInt(4, UserAuthorID);
+			stmt.setInt(5, RestaurantAuthorID);
+			stmt.setString(6, TypeOfDish);
+			stmt.setInt(7, Calories);
+			stmt.setString(8, Description);
+			stmt.setInt(9, TimeToCook);
+			stmt.setString(10, Instructions);
 
 			stmt.execute();
 			return true;
