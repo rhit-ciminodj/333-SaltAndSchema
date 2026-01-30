@@ -105,7 +105,8 @@ CREATE OR ALTER PROCEDURE newRecipe
 (
 	@Name nvarchar(20),
 	@ServingSize smallint = 0,
-	@AuthorID int = null,
+	@UserAuthorID int = null,
+	@RestaurantAuthorID int = null,
 	@TypeOfDish nvarchar(10) = 'Not Set',
 	@Calories smallint = 0,
 	@Description nvarchar(200) = 'Not Set',
@@ -119,8 +120,13 @@ BEGIN
 		THROW 51011, 'Null Input', 1
 		RETURN
 	END
-	INSERT INTO Recipe ([Name], ServingSize, AuthorID, TypeOfDish, Calories, [Description], TimeToCook, InstructionSet) 
-	VALUES (@Name, @ServingSize, @AuthorID, @TypeOfDish, @Calories, @Description, @TimeToCook, @InstructionSet)
+	IF (@UserAuthorID IS NOT NULL AND @RestaurantAuthorID IS NOT NULL)
+	BEGIN;
+		THROW 52000, 'User and Author cannot both be filled out.', 1
+		RETURN
+	END
+	INSERT INTO Recipe ([Name], ServingSize, UserAuthorID, RestaurantAuthorID, TypeOfDish, Calories, [Description], TimeToCook, InstructionSet) 
+	VALUES (@Name, @ServingSize, @UserAuthorID, @RestaurantAuthorID, @TypeOfDish, @Calories, @Description, @TimeToCook, @InstructionSet)
 END
 GO
 CREATE OR ALTER PROCEDURE newPair

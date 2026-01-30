@@ -23,7 +23,7 @@ SELECT
 	r.Description,
 	r.InstructionSet
 FROM Recipe r
-LEFT JOIN Users u ON (u.UserID = r.AuthorID)
+LEFT JOIN Users u ON (u.UserID = r.UserAuthorID)
 GO
 CREATE OR ALTER VIEW vw_RecipeIngredients
 AS
