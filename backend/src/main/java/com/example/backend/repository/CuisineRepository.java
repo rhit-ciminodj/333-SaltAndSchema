@@ -5,17 +5,14 @@ import org.springframework.data.jpa.repository.query.Procedure;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import com.example.backend.entity.Restaurant;
-import java.math.BigDecimal;
+import com.example.backend.entity.Cuisine;
 
 @Repository
-public interface RestaurantRepository extends JpaRepository<Restaurant, Integer> {
+public interface CuisineRepository extends JpaRepository<Cuisine, Integer> {
 
-    @Procedure(procedureName = "newRestaurant")
-    void newRestaurant(
+    @Procedure(procedureName = "newCuisine")
+    void newCuisine(
         @Param("Name") String name,
-        @Param("Rating") BigDecimal rating,
-        @Param("Address") String address
+        @Param("Description") String description
     );
 }
-

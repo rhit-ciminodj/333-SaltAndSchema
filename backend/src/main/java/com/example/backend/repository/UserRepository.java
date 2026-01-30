@@ -8,6 +8,20 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, Integer> {
-    @Procedure(name = "newUser")
-    void newUser(@Param("Username") String username, @Param("Address") String address);
+
+    @Procedure(procedureName = "newUser")
+    void newUser(
+        @Param("Username") String username,
+        @Param("Address") String address
+    );
+
+    @Procedure(procedureName = "DeleteUser")
+    void deleteUser(@Param("UserID") Integer userId);
+
+    @Procedure(procedureName = "changeUsername")
+    void changeUsername(
+        @Param("userID") Integer userId,
+        @Param("newUsername") String newUsername
+    );
 }
+
