@@ -341,7 +341,7 @@ public class AddtoDatabase {
 			return false;
 		}
 	}
-	public Boolean newRestaurant(String RestaurantName, String Address) {	
+	public Boolean newRestaurant(String RestaurantName, double rating, String Address) {	
 		try {
 			CallableStatement stmt;
 			stmt = dbService.getConnection().prepareCall("{? = call newRestaurant(?,?)}");
