@@ -22,5 +22,8 @@ public interface RecipeRepository extends JpaRepository<Recipe, Integer> {
         @Param("TimeToCook") Short timeToCook,
         @Param("InstructionSet") String instructionSet
     );
+
+    @Procedure(procedureName = "getRecipeStars")
+    Double getRecipeStars(@Param("recipeID") Integer recipeId);
 }
 
