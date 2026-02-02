@@ -5,12 +5,12 @@ import java.math.BigDecimal;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "Restaurants")
+@Table(name = "Restaurant")
 public class Restaurant {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "RestaurantID")
+    @Column(name = "RestID")
     private Integer restaurantId;
 
     @Column(name = "Name", nullable = false, length = 50)

@@ -20,6 +20,11 @@ public class BestPairsWithId implements Serializable {
         this.sideRecipeId = sideRecipeId;
     }
 
+    public Integer getMainRecipeId() { return mainRecipeId; }
+    public void setMainRecipeId(Integer mainRecipeId) { this.mainRecipeId = mainRecipeId; }
+    public Integer getSideRecipeId() { return sideRecipeId; }
+    public void setSideRecipeId(Integer sideRecipeId) { this.sideRecipeId = sideRecipeId; }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

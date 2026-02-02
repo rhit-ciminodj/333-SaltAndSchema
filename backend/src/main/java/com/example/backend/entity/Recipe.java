@@ -25,7 +25,7 @@ public class Recipe {
         nullable = true)
     private int userAuthorId;
 
-    @Column(name = "RestaurantAuthorID",
+    @Column(name = "RestaurantAuthorId",
         nullable = true)
     private int restaurantAuthorId;
     

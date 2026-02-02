@@ -3,6 +3,7 @@ package com.example.backend.controller;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -14,31 +15,65 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import com.example.backend.entity.User;
-import com.example.backend.repository.UserRepository;
+import com.example.backend.service.UserService;
 
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
     @Autowired
-    private UserRepository userRepository;
+    private UserService userService;
 
     @GetMapping
     public List<User> getAllUsers() {
-        return userRepository.findAll();
+        return userService.getAllUsers();
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<User> getUserById(@PathVariable Integer id) {
+        User user = userService.getUserById(id);
+        if (user != null) {
+            return ResponseEntity.ok(user);
+        }
+        return ResponseEntity.notFound().build();
     }
 
     @PostMapping
-    public void createUser(@RequestBody User user) {
-        userRepository.newUser(user.getUsername(), user.getAddress());
+    public ResponseEntity<String> createUser(@RequestBody User user) {
+        try {
+            userService.createUser(user.getUsername(), user.getAddress());
+            return ResponseEntity.ok("User created successfully");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error: " + e.getMessage());
+        }
     }
 
     @DeleteMapping("/{id}")
-    public void deleteUser(@PathVariable Integer id) {
-        userRepository.deleteUser(id);
+    public ResponseEntity<String> deleteUser(@PathVariable Integer id) {
+        try {
+            userService.deleteUser(id);
+            return ResponseEntity.ok("User deleted successfully");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error: " + e.getMessage());
+        }
     }
 
     @PutMapping("/{id}/username")
-    public void changeUsername(@PathVariable Integer id, @RequestParam String newUsername) {
-        userRepository.changeUsername(id, newUsername);
+    public ResponseEntity<String> changeUsername(@PathVariable Integer id, @RequestParam String newUsername) {
+        try {
+            userService.changeUsername(id, newUsername);
+            return ResponseEntity.ok("Username updated successfully");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error: " + e.getMessage());
+        }
+    }
+
+    @PutMapping("/{id}/address")
+    public ResponseEntity<String> changeAddress(@PathVariable Integer id, @RequestParam String newAddress) {
+        try {
+            userService.changeAddress(id, newAddress);
+            return ResponseEntity.ok("Address updated successfully");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error: " + e.getMessage());
+        }
     }
 }

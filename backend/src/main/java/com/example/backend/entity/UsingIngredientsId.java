@@ -20,6 +20,11 @@ public class UsingIngredientsId implements Serializable {
         this.recipeId = recipeId;
     }
 
+    public Integer getIngredientId() { return ingredientId; }
+    public void setIngredientId(Integer ingredientId) { this.ingredientId = ingredientId; }
+    public Integer getRecipeId() { return recipeId; }
+    public void setRecipeId(Integer recipeId) { this.recipeId = recipeId; }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

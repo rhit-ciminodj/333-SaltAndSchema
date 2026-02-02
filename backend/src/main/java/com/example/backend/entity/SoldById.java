@@ -20,6 +20,11 @@ public class SoldById implements Serializable {
         this.storeId = storeId;
     }
 
+    public Integer getIngredientId() { return ingredientId; }
+    public void setIngredientId(Integer ingredientId) { this.ingredientId = ingredientId; }
+    public Integer getStoreId() { return storeId; }
+    public void setStoreId(Integer storeId) { this.storeId = storeId; }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

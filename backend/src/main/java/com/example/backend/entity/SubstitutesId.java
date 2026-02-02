@@ -20,6 +20,11 @@ public class SubstitutesId implements Serializable {
         this.substituteId = substituteId;
     }
 
+    public Integer getIngredientId() { return ingredientId; }
+    public void setIngredientId(Integer ingredientId) { this.ingredientId = ingredientId; }
+    public Integer getSubstituteId() { return substituteId; }
+    public void setSubstituteId(Integer substituteId) { this.substituteId = substituteId; }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
