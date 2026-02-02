@@ -192,6 +192,22 @@ BEGIN
 	INSERT INTO HasEaten (UserID, RecipeId, Favorites, Stars) VALUES (@UserID, @RecipeID, @Favorites, @Stars)
 END
 GO
+CREATE OR ALTER PROCEDURE newIngredient
+(
+    @Name nvarchar(20),
+    @Desciption nvarchar(200)
+)
+AS
+BEGIN
+    IF (@Name IS NULL)
+    BEGIN;
+        THROW 51000, 'Null Input', 1;
+    END
+
+    INSERT INTO Ingredients ([Name], [Description])
+    VALUES (@Name, @Desciption);
+END
+GO
 CREATE OR ALTER PROCEDURE [soldByStore]
 (
 	@IngredientID int,

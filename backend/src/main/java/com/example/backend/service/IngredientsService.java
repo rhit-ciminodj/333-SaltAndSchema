@@ -44,6 +44,17 @@ public class IngredientsService {
         return ingredients.isEmpty() ? null : ingredients.get(0);
     }
 
+    public void newIngredient(String name, String description) {
+        SimpleJdbcCall jdbcCall = new SimpleJdbcCall(jdbcTemplate)
+                .withProcedureName("newIngredient");
+
+        Map<String, Object> inParams = new HashMap<>();
+        inParams.put("Name", name);
+        inParams.put("Description", description);
+
+        jdbcCall.execute(inParams);
+    }
+
     public void addIngredientToRecipe(Integer ingredientId, Integer recipeId, Short quantity) {
         SimpleJdbcCall jdbcCall = new SimpleJdbcCall(jdbcTemplate)
                 .withProcedureName("addIngredientToRecipe");
