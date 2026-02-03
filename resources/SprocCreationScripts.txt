@@ -329,3 +329,27 @@ BEGIN
 	END
 	INSERT INTO UsingIngredients(IngredientID, RecipeID, Quantity) VALUES (@IngredientID, @RecipeID, @Quantity)
 END
+GO
+CREATE OR ALTER PROCEDURE registerNewUser (
+	@Username nvarchar(20),
+	@Address nvarchar(50),
+	@PasswordHash varbinary(64),
+	@Salt varbinary(32)
+)
+AS
+BEGIN
+	IF(@Username IS NULL OR @Address IS NULL OR @PasswordHash IS NULL OR @Salt IS NULL)
+	BEGIN;
+		THROW 51000, 'Null input', 1
+		RETURN
+	END
+
+	INSERT INTO Users (Username, [Address])
+	VALUES (@Username, @Address)
+
+	DECLARE @newUserID int
+	SET @newUserID = SCOPE_IDENTITY()
+
+	INSERT INTO UserAuth (UserID, PasswordHash, Salt)
+	VALUES (@newUserID, @PasswordHash, @Salt)
+END

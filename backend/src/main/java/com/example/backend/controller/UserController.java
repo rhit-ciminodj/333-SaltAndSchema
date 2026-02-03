@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import com.example.backend.entity.User;
 import com.example.backend.service.UserService;
+import com.example.backend.dto.RegisterRequest;
+import com.example.backend.dto.LoginRequest;
 
 @RestController
 @RequestMapping("/api/users")
@@ -37,11 +39,25 @@ public class UserController {
         return ResponseEntity.notFound().build();
     }
 
-    @PostMapping
-    public ResponseEntity<String> createUser(@RequestBody User user) {
+    @PostMapping("/register")
+    public ResponseEntity<String> registerUser(@RequestBody RegisterRequest registerRequest) {
         try {
-            userService.createUser(user.getUsername(), user.getAddress());
+            userService.registerNewUser(registerRequest.getUsername(), registerRequest.getAddress(), registerRequest.getPassword());
             return ResponseEntity.ok("User created successfully");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<String> userLogin(@RequestBody LoginRequest loginRequest) {
+        try {
+            boolean isValid = userService.loginUser(loginRequest.getUsername(), loginRequest.getPassword());
+            if(isValid) {
+                return ResponseEntity.ok("User successfully loged in");
+            } else {
+                return ResponseEntity.badRequest().body("Invalid Login");
+            }
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Error: " + e.getMessage());
         }
