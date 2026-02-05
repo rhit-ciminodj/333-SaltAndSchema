@@ -24,9 +24,9 @@ public class Importer {
             reader.close();
             System.out.println("Begin Imports");
 
-            importPeople(data.getAsJsonArray("people"));
-            importCuisineTypes(data.getAsJsonArray("cuisine_types"));
-            // importKitchenTools(data.getAsJsonArray("kitchen_tools"));
+            // importPeople(data.getAsJsonArray("people"));
+            // importCuisineTypes(data.getAsJsonArray("cuisine_types"));
+            importKitchenTools(data.getAsJsonArray("kitchen_tools"));
             // importIngredients(data.getAsJsonArray("food_items"));
             // importStores(data.getAsJsonArray("stores"));
             // importRestaurants(data.getAsJsonArray("restaurants"));
