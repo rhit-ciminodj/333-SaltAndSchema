@@ -43,7 +43,7 @@ public class Main {
 			
 
 		if (dbService.connect(serverUsername, serverPassword)) {
-			System.out.println("Connection Established");
+			System.out.println("Connection Established");	
 			Importer importer = new Importer(dbService);
 			importer.Import();
 			dbService.closeConnection();

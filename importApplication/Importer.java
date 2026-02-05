@@ -26,19 +26,19 @@ public class Importer {
 
             importPeople(data.getAsJsonArray("people"));
             importCuisineTypes(data.getAsJsonArray("cuisine_types"));
-            importKitchenTools(data.getAsJsonArray("kitchen_tools"));
-            importFoodItems(data.getAsJsonArray("food_items"));
-            importStores(data.getAsJsonArray("stores"));
-            importRestaurants(data.getAsJsonArray("restaurants"));
-            importDishes(data.getAsJsonArray("dishes"));
-            importIngredientSubstitutions(data.getAsJsonArray("ingredient_substitutions"));
-            importRecipeIngredients(data.getAsJsonArray("recipe_ingredients"));
-            importRecipeTools(data.getAsJsonArray("recipe_tools"));
-            importDishCuisines(data.getAsJsonArray("dish_cuisines"));
-            importRestaurantMenu(data.getAsJsonArray("restaurant_menu"));
-            importUserRatings(data.getAsJsonArray("user_ratings"));
-            importStoreInventory(data.getAsJsonArray("store_inventory"));
-            importDishPairings(data.getAsJsonArray("dish_pairings"));
+            // importKitchenTools(data.getAsJsonArray("kitchen_tools"));
+            // importIngredients(data.getAsJsonArray("food_items"));
+            // importStores(data.getAsJsonArray("stores"));
+            // importRestaurants(data.getAsJsonArray("restaurants"));
+            // importDishes(data.getAsJsonArray("dishes"));
+            // importIngredientSubstitutions(data.getAsJsonArray("ingredient_substitutions"));
+            // importRecipeIngredients(data.getAsJsonArray("recipe_ingredients"));
+            // importRecipeTools(data.getAsJsonArray("recipe_tools"));
+            // importDishCuisines(data.getAsJsonArray("dish_cuisines"));
+            // importRestaurantMenu(data.getAsJsonArray("restaurant_menu"));
+            // importUserRatings(data.getAsJsonArray("user_ratings"));
+            // importStoreInventory(data.getAsJsonArray("store_inventory"));
+            // importDishPairings(data.getAsJsonArray("dish_pairings"));
 
             System.out.println("Data import completed successfully!");
         } catch (Exception e) {
@@ -51,7 +51,12 @@ public class Importer {
         for (JsonElement element : people) {
             JsonObject person = element.getAsJsonObject();
             String username = person.get("username").getAsString();
-            dbAdder.newUser(username, "password123");
+            String street = person.get("street").getAsString();
+            String city = person.get("city").getAsString();
+            String state = person.get("state").getAsString();
+            String zipcode = person.get("zip").getAsString();
+            String address = street + " " + city + ", " + state + " " + zipcode;
+            dbAdder.newUser(username, address);
             System.out.println("Added user: " + username);
         }
         System.out.println("\nAdded all users\n");
@@ -72,18 +77,19 @@ public class Importer {
         for (JsonElement element : tools) {
             JsonObject tool = element.getAsJsonObject();
             String toolName = tool.get("tool_name").getAsString();
-            dbAdder.newEquipment(toolName);
+            String desc = tool.get("description").getAsString();
+            dbAdder.newEquipment(toolName, desc);
             System.out.println("Added equipment: " + toolName);
         }
         System.out.println("\nAdded all equipment\n");
     }
 
-    private void importFoodItems(JsonArray items) {
+    private void importIngredients(JsonArray items) {
         for (JsonElement element : items) {
             JsonObject item = element.getAsJsonObject();
             String itemName = item.get("item_name").getAsString();
-            // You'll need to add a newIngredient method to AddtoDatabase
-            // For now, this assumes ingredients are created via stored procedure
+            String desc = item.get("notes").getAsString();
+            dbAdder.addIngredient(itemName, desc);
             System.out.println("Processing ingredient: " + itemName);
         }
         System.out.println("\nAdded all Foods\n");
@@ -104,7 +110,8 @@ public class Importer {
             JsonObject restaurant = element.getAsJsonObject();
             String name = restaurant.get("name").getAsString();
             String location = restaurant.get("location").getAsString();
-            dbAdder.newRestaurant(name, location);
+            Double rating = restaurant.get("rating_stars").getAsDouble();
+            dbAdder.newRestaurant(name, rating, location);
             System.out.println("Added restaurant: " + name);
         }
     }
@@ -112,12 +119,21 @@ public class Importer {
     private void importDishes(JsonArray dishes) {
         for (JsonElement element : dishes) {
             JsonObject dish = element.getAsJsonObject();
-            String dishName = dish.get("dish_name").getAsString();
+            String dishName = dish.get( "dish_name").getAsString();
+            int servings = dish.get("serves").getAsInt();
+            String author = dish.get("creator_username").getAsString();
+            String type = dish.get("Category").getAsString();
+            int calorie = dish.get("calorie_count").getAsInt();
+            String summary = dish.get("summary").getAsString();
+            int minutes = dish.get("cook_minutes").getAsInt();
             String steps = dish.get("steps").getAsString();
-            dbAdder.newRecipe(dishName, steps);
+            dbAdder.newRecipe(dishName, servings, author, type, calorie, summary, minutes, steps);
             System.out.println("Added recipe: " + dishName);
         }
     }
+
+    // String RecipeName, int ServingSize, String UserAuthor,int RestaurantAuthorID, String TypeOfDish,
+		//  int Calories,String Description, int TimeToCook, String Instructions
 
     private void importIngredientSubstitutions(JsonArray substitutions) {
         for (JsonElement element : substitutions) {

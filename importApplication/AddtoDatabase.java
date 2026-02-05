@@ -315,20 +315,20 @@ public class AddtoDatabase {
 			return false;
 		}
 	}
-	public Boolean newRecipe(String RecipeName, int ServingSize, int UserAuthorID,int RestaurantAuthorID, String TypeOfDish, int Calories,String Description, int TimeToCook, String Instructions) {	
+	public Boolean newRecipe(String RecipeName, int ServingSize, String UserAuthor, String TypeOfDish,
+		 int Calories,String Description, int TimeToCook, String Instructions) {	
 		try {
 			CallableStatement stmt;
-			stmt = dbService.getConnection().prepareCall("{? = call newRecipe(?,?,?,?,?,? ,?,?,?)}");
+			stmt = dbService.getConnection().prepareCall("{? = call newRecipe(?,?,?,?,?,?,?,?)}");
 			stmt.registerOutParameter(1, java.sql.Types.INTEGER);
 			stmt.setString(2, RecipeName);
 			stmt.setInt(3, ServingSize);
-			stmt.setInt(4, UserAuthorID);
-			stmt.setInt(5, RestaurantAuthorID);
-			stmt.setString(6, TypeOfDish);
-			stmt.setInt(7, Calories);
-			stmt.setString(8, Description);
-			stmt.setInt(9, TimeToCook);
-			stmt.setString(10, Instructions);
+			stmt.setString(4, UserAuthor);
+			stmt.setString(5, TypeOfDish);
+			stmt.setInt(6, Calories);
+			stmt.setString(7, Description);
+			stmt.setInt(8, TimeToCook);
+			stmt.setString(9, Instructions);
 
 			stmt.execute();
 			return true;
@@ -381,6 +381,27 @@ public class AddtoDatabase {
 			}
 			if(e.getErrorCode() == 51022) {
 				JOptionPane.showMessageDialog(null, "Username already exists.");
+			}
+			e.printStackTrace();
+			return false;
+		}
+	}
+	public Boolean addIngredient(String name, String description) {	
+		try {
+			CallableStatement stmt;
+			stmt = dbService.getConnection().prepareCall("{? = call newIngredient(?,?)}");
+			stmt.registerOutParameter(1, java.sql.Types.INTEGER);
+			stmt.setString(2, name);
+			stmt.setString(3, description);
+
+			stmt.execute();
+			return true;
+		} catch (SQLException e) {
+			if(e.getErrorCode() == 51021) {
+				e.printStackTrace();
+			}
+			if(e.getErrorCode() == 51022) {
+				JOptionPane.showMessageDialog(null, "Ingredient already exists.");
 			}
 			e.printStackTrace();
 			return false;

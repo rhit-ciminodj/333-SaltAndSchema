@@ -101,12 +101,18 @@ BEGIN
 	INSERT INTO GroceryStores ([Name], [Address]) VALUES (@Name, @Address)
 END
 GO
-CREATE OR ALTER PROCEDURE newRecipe
+USE [SaltAndSchema]
+GO
+/****** Object:  StoredProcedure [dbo].[newRecipe]    Script Date: 2/5/2026 5:08:02 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER   PROCEDURE [dbo].[newRecipe]
 (
 	@Name nvarchar(20),
 	@ServingSize smallint = 0,
-	@UserAuthorID int = null,
-	@RestaurantAuthorID int = null,
+	@UserAuthor nvarchar(20) = null,
 	@TypeOfDish nvarchar(10) = 'Not Set',
 	@Calories smallint = 0,
 	@Description nvarchar(200) = 'Not Set',
@@ -115,18 +121,19 @@ CREATE OR ALTER PROCEDURE newRecipe
 )
 AS
 BEGIN
+	DECLARE @UserAuthorID int
+	SET @UserAuthorID = null
 	IF (@Name IS NULL)
 	BEGIN;
 		THROW 51011, 'Null Input', 1
 		RETURN
 	END
-	IF (@UserAuthorID IS NOT NULL AND @RestaurantAuthorID IS NOT NULL)
+	IF (@UserAuthor IS NOT NULL)
 	BEGIN;
-		THROW 52000, 'User and Author cannot both be filled out.', 1
-		RETURN
+		SELECT @UserAuthorID = UserID FROM Users WHERE Username = @UserAuthor
 	END
-	INSERT INTO Recipe ([Name], ServingSize, UserAuthorID, RestaurantAuthorID, TypeOfDish, Calories, [Description], TimeToCook, InstructionSet) 
-	VALUES (@Name, @ServingSize, @UserAuthorID, @RestaurantAuthorID, @TypeOfDish, @Calories, @Description, @TimeToCook, @InstructionSet)
+	INSERT INTO Recipe ([Name], ServingSize, UserAuthorID, TypeOfDish, Calories, [Description], TimeToCook, InstructionSet) 
+	VALUES (@Name, @ServingSize, @UserAuthorID, @TypeOfDish, @Calories, @Description, @TimeToCook, @InstructionSet)
 END
 GO
 CREATE OR ALTER PROCEDURE newPair
