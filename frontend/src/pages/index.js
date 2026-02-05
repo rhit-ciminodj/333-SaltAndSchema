@@ -8,3 +8,4 @@ export { IngredientDetailPage } from './IngredientDetailPage';
 export { StoresPage } from './StoresPage';
 export { StoreDetailPage } from './StoreDetailPage';
 export { ProfilePage } from './ProfilePage';
+export { LoginPage } from './LoginPage';

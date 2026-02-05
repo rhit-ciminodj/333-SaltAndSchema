@@ -4,7 +4,7 @@ import axios from "axios";
 
 export default function UserCRUD() {
   const [users, setUsers] = useState([]);
-  const [form, setForm] = useState({ userId: "", username: "", address: "" });
+  const [form, setForm] = useState({ userId: "", username: "", address: "", password: "" });
   const [error, setError] = useState(null);
 
   const fetchUsers = async () => {
@@ -18,18 +18,22 @@ export default function UserCRUD() {
 
   const createUser = async () => {
     try {
-      await axios.post("/api/users", { username: form.username, address: form.address });
-      setForm({ userId: "", username: "", address: "" });
+      await axios.post("/api/users/register", {
+        username: form.username,
+        address: form.address,
+        password: form.password,
+      });
+      setForm({ userId: "", username: "", address: "", password: "" });
       fetchUsers();
     } catch (err) {
-      setError(err.message);
+      setError(err.response?.data || err.message);
     }
   };
 
   const updateUsername = async () => {
     try {
       await axios.put(`/api/users/${form.userId}/username`, null, { params: { newUsername: form.username } });
-      setForm({ userId: "", username: "", address: "" });
+      setForm({ userId: "", username: "", address: "", password: "" });
       fetchUsers();
     } catch (err) {
       setError(err.message);
@@ -46,7 +50,7 @@ export default function UserCRUD() {
   };
 
   const editUser = (user) => {
-    setForm({ userId: user.userId, username: user.username, address: user.address });
+    setForm({ userId: user.userId, username: user.username, address: user.address, password: "" });
   };
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
@@ -82,13 +86,22 @@ export default function UserCRUD() {
           value={form.address}
           onChange={handleChange}
         />
+        {!form.userId && (
+          <input
+            name="password"
+            placeholder="Password"
+            type="password"
+            value={form.password}
+            onChange={handleChange}
+          />
+        )}
         {form.userId ? (
           <button onClick={updateUsername}>Update Username</button>
         ) : (
           <button onClick={createUser}>Add User</button>
         )}
         {form.userId && (
-          <button onClick={() => setForm({ userId: "", username: "", address: "" })}>Cancel</button>
+          <button onClick={() => setForm({ userId: "", username: "", address: "", password: "" })}>Cancel</button>
         )}
       </section>
 

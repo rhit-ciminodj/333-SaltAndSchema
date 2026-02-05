@@ -5,6 +5,7 @@ import {
   Store, 
   ShoppingBasket, 
   User,
+  LogIn,
   Home,
   Menu,
   X
@@ -18,6 +19,7 @@ const navItems = [
   { to: '/restaurants', icon: UtensilsCrossed, label: 'Restaurants' },
   { to: '/ingredients', icon: ShoppingBasket, label: 'Ingredients' },
   { to: '/stores', icon: Store, label: 'Stores' },
+  { to: '/login', icon: LogIn, label: 'Login' },
   { to: '/profile', icon: User, label: 'Profile' },
 ];
 

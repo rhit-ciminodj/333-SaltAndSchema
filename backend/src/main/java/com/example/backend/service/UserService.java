@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
@@ -16,8 +17,11 @@ import javax.sql.DataSource;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.SqlParameter;
 import org.springframework.jdbc.core.simple.SimpleJdbcCall;
 import org.springframework.stereotype.Service;
+
+import java.sql.Types;
 
 import com.example.backend.entity.User;
 import com.example.backend.entity.UserAuth;
@@ -77,8 +81,8 @@ public UserAuth getUserAuthById(Integer userId) {
     List<UserAuth> auths = jdbcTemplate.query(sql, (rs, rowNum) -> {
         UserAuth auth = new UserAuth();
         auth.setUserId(rs.getInt("UserID"));
-        auth.setPasswordHash(rs.getString("PasswordHash").getBytes());
-        auth.setSalt(rs.getString("Salt").getBytes()); 
+        auth.setPasswordHash(rs.getBytes("PasswordHash"));
+        auth.setSalt(rs.getBytes("Salt")); 
         return auth;
     }, userId);
     return auths.isEmpty() ? null : auths.get(0);
@@ -98,7 +102,7 @@ public UserAuth getUserAuthById(Integer userId) {
 
             byte[] realSalt = dec.decode(auth.getSalt());
             String hashedPassword = this.hashPassword(realSalt, password);
-            return hashedPassword.equals(new String(auth.getPasswordHash()));
+            return hashedPassword.equals(new String(auth.getPasswordHash(), StandardCharsets.UTF_8));
         } catch (Exception e) {
             return false;
         }
@@ -151,7 +155,14 @@ public UserAuth getUserAuthById(Integer userId) {
 
     public void registerNewUser(String username, String address, String password) {
         SimpleJdbcCall jdbcCall = new SimpleJdbcCall(jdbcTemplate)
-                .withProcedureName("registerNewUser");
+            .withProcedureName("registerNewUser")
+            .withSchemaName("dbo")
+            .withoutProcedureColumnMetaDataAccess()
+            .declareParameters(
+                new SqlParameter("Username", Types.NVARCHAR),
+                new SqlParameter("Address", Types.NVARCHAR),
+                new SqlParameter("PasswordHash", Types.VARBINARY),
+                new SqlParameter("Salt", Types.VARBINARY));
 
         byte[] newPasswordSalt = this.getNewSalt();
 		String hashedPassword = this.hashPassword(newPasswordSalt, password);
@@ -160,8 +171,8 @@ public UserAuth getUserAuthById(Integer userId) {
         Map<String, Object> inParams = new HashMap<>();
         inParams.put("Username", username);
         inParams.put("Address", address);
-        inParams.put("PasswordHash", hashedPassword);
-        inParams.put("Salt", saltBase64);
+        inParams.put("PasswordHash", hashedPassword.getBytes(StandardCharsets.UTF_8));
+        inParams.put("Salt", saltBase64.getBytes(StandardCharsets.UTF_8));
 
         jdbcCall.execute(inParams);
     }

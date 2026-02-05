@@ -11,6 +11,7 @@ import {
   StoresPage,
   StoreDetailPage,
   ProfilePage,
+  LoginPage,
 } from './pages';
 import DemoPage from "./pages/demopage";
 
@@ -30,6 +31,7 @@ function App() {
           <Route path="stores" element={<StoresPage />} />
           <Route path="stores/:id" element={<StoreDetailPage />} />
           <Route path="profile" element={<ProfilePage />} />
+          <Route path="login" element={<LoginPage />} />
           <Route path="demo" element={<DemoPage />} />
         </Route>
       </Routes>
