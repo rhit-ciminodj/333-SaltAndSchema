@@ -2,6 +2,7 @@ import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.util.ArrayList;
 
 import javax.swing.JOptionPane;
@@ -189,6 +190,26 @@ public class AddtoDatabase {
 			return false;
 		}
 	}
+	public Boolean DeleteRestaurant(int RestID) {	
+		try {
+			CallableStatement stmt;
+			stmt = dbService.getConnection().prepareCall("{? = call deleteRestaurant(?)}");
+			stmt.registerOutParameter(1, java.sql.Types.INTEGER);
+			stmt.setInt(2, RestID);
+
+			stmt.execute();
+			return true;
+		} catch (SQLException e) {
+			if(e.getErrorCode() == 51000) {
+				e.printStackTrace();
+			}
+			if(e.getErrorCode() == 51001) {
+				e.printStackTrace();
+			}
+			e.printStackTrace();
+			return false;
+		}
+	}
 	public Boolean getRecipeStars(int RecipeID, double newStars) {	
 		try {
 			CallableStatement stmt;
@@ -315,20 +336,25 @@ public class AddtoDatabase {
 			return false;
 		}
 	}
-	public Boolean newRecipe(String RecipeName, int ServingSize, String UserAuthor, String TypeOfDish,
+	public Boolean newRecipe(String RecipeName, int ServingSize, String UserAuthor, String RestName, String TypeOfDish,
 		 int Calories,String Description, int TimeToCook, String Instructions) {	
 		try {
 			CallableStatement stmt;
-			stmt = dbService.getConnection().prepareCall("{? = call newRecipe(?,?,?,?,?,?,?,?)}");
+			stmt = dbService.getConnection().prepareCall("{? = call newRecipe(?,?,?,?,?,?,?,?,?)}");
 			stmt.registerOutParameter(1, java.sql.Types.INTEGER);
 			stmt.setString(2, RecipeName);
 			stmt.setInt(3, ServingSize);
-			stmt.setString(4, UserAuthor);
-			stmt.setString(5, TypeOfDish);
-			stmt.setInt(6, Calories);
-			stmt.setString(7, Description);
-			stmt.setInt(8, TimeToCook);
-			stmt.setString(9, Instructions);
+			if(UserAuthor == null){
+				stmt.setNull(4, Types.NVARCHAR);
+			}
+			if(RestName == null){
+				stmt.setNull(5, Types.NVARCHAR);
+			}
+			stmt.setString(6, TypeOfDish);
+			stmt.setInt(7, Calories);
+			stmt.setString(8, Description);
+			stmt.setInt(9, TimeToCook);
+			stmt.setString(10, Instructions);
 
 			stmt.execute();
 			return true;
