@@ -3,7 +3,8 @@ import axios from 'axios';
 import { Card, CardBody, CardHeader, Button, Input } from '../components/ui';
 
 export function LoginPage() {
-  const [form, setForm] = useState({ username: '', password: '' });
+  const [form, setForm] = useState({ username: '', address: '', password: '' });
+  const [isRegistering, setIsRegistering] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -22,15 +23,23 @@ export function LoginPage() {
     setSuccess('');
 
     try {
-      const response = await axios.post('/api/users/login', {
-        username: form.username,
-        password: form.password,
-      });
-      const message = typeof response.data === 'string' ? response.data : 'Login successful.';
+      const response = isRegistering
+        ? await axios.post('/api/users/register', {
+            username: form.username,
+            address: form.address,
+            password: form.password,
+          })
+        : await axios.post('/api/users/login', {
+            username: form.username,
+            password: form.password,
+          });
+      const fallbackMessage = isRegistering ? 'Account created.' : 'Login successful.';
+      const message = typeof response.data === 'string' ? response.data : fallbackMessage;
       setSuccess(message);
-      setForm({ username: '', password: '' });
+      setForm({ username: '', address: '', password: '' });
     } catch (err) {
-      const message = err.response?.data || err.message || 'Login failed.';
+      const fallbackMessage = isRegistering ? 'Registration failed.' : 'Login failed.';
+      const message = err.response?.data || err.message || fallbackMessage;
       setError(message);
     } finally {
       setLoading(false);
@@ -73,8 +82,14 @@ export function LoginPage() {
           <Card className="border-gradient animate-fade-in">
             <CardHeader>
               <div className="space-y-2">
-                <h2 className="text-2xl font-semibold text-white font-display">User Login</h2>
-                <p className="text-sm text-zinc-400">Enter your username and password to continue.</p>
+                <h2 className="text-2xl font-semibold text-white font-display">
+                  {isRegistering ? 'Create Your Account' : 'User Login'}
+                </h2>
+                <p className="text-sm text-zinc-400">
+                  {isRegistering
+                    ? 'Create your profile to start saving favorites.'
+                    : 'Enter your username and password to continue.'}
+                </p>
               </div>
             </CardHeader>
             <CardBody>
@@ -88,6 +103,17 @@ export function LoginPage() {
                   autoComplete="username"
                   required
                 />
+                {isRegistering && (
+                  <Input
+                    label="Address"
+                    name="address"
+                    value={form.address}
+                    onChange={handleChange}
+                    placeholder="123 Kitchen St"
+                    autoComplete="street-address"
+                    required
+                  />
+                )}
                 <Input
                   label="Password"
                   name="password"
@@ -95,7 +121,7 @@ export function LoginPage() {
                   value={form.password}
                   onChange={handleChange}
                   placeholder="••••••••"
-                  autoComplete="current-password"
+                  autoComplete={isRegistering ? 'new-password' : 'current-password'}
                   required
                 />
 
@@ -111,8 +137,27 @@ export function LoginPage() {
                 )}
 
                 <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? 'Signing in...' : 'Sign In'}
+                  {loading
+                    ? isRegistering
+                      ? 'Creating account...'
+                      : 'Signing in...'
+                    : isRegistering
+                      ? 'Create Account'
+                      : 'Sign In'}
                 </Button>
+                <button
+                  type="button"
+                  className="w-full text-sm text-zinc-400 hover:text-white"
+                  onClick={() => {
+                    setIsRegistering((prev) => !prev);
+                    setError('');
+                    setSuccess('');
+                  }}
+                >
+                  {isRegistering
+                    ? 'Already have an account? Sign in'
+                    : "Don't have an account? Create one"}
+                </button>
               </form>
             </CardBody>
           </Card>
