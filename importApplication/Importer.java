@@ -24,21 +24,21 @@ public class Importer {
             reader.close();
             System.out.println("Begin Imports");
 
-            // importPeople(data.getAsJsonArray("people"));
-            // importCuisineTypes(data.getAsJsonArray("cuisine_types"));
+            importPeople(data.getAsJsonArray("people"));
+            importCuisineTypes(data.getAsJsonArray("cuisine_types"));
             importKitchenTools(data.getAsJsonArray("kitchen_tools"));
-            // importIngredients(data.getAsJsonArray("food_items"));
-            // importStores(data.getAsJsonArray("stores"));
-            // importRestaurants(data.getAsJsonArray("restaurants"));
-            // importDishes(data.getAsJsonArray("dishes"));
-            // importIngredientSubstitutions(data.getAsJsonArray("ingredient_substitutions"));
-            // importRecipeIngredients(data.getAsJsonArray("recipe_ingredients"));
-            // importRecipeTools(data.getAsJsonArray("recipe_tools"));
-            // importDishCuisines(data.getAsJsonArray("dish_cuisines"));
-            // importRestaurantMenu(data.getAsJsonArray("restaurant_menu"));
-            // importUserRatings(data.getAsJsonArray("user_ratings"));
-            // importStoreInventory(data.getAsJsonArray("store_inventory"));
-            // importDishPairings(data.getAsJsonArray("dish_pairings"));
+            importIngredients(data.getAsJsonArray("food_items"));
+            importStores(data.getAsJsonArray("stores"));
+            importRestaurants(data.getAsJsonArray("restaurants"));
+            importDishes(data.getAsJsonArray("dishes"));
+            importIngredientSubstitutions(data.getAsJsonArray("ingredient_substitutions"));
+            importRecipeIngredients(data.getAsJsonArray("recipe_ingredients"));
+            importRecipeTools(data.getAsJsonArray("recipe_tools"));
+            importDishCuisines(data.getAsJsonArray("dish_cuisines"));
+            importRestaurantMenu(data.getAsJsonArray("restaurant_menu"));
+            importUserRatings(data.getAsJsonArray("user_ratings"));
+            importStoreInventory(data.getAsJsonArray("store_inventory"));
+            importDishPairings(data.getAsJsonArray("dish_pairings"));
 
             System.out.println("Data import completed successfully!");
         } catch (Exception e) {
@@ -122,12 +122,12 @@ public class Importer {
             String dishName = dish.get( "dish_name").getAsString();
             int servings = dish.get("serves").getAsInt();
             String author = dish.get("creator_username").getAsString();
-            String type = dish.get("Category").getAsString();
+            String type = dish.get("category").getAsString();
             int calorie = dish.get("calorie_count").getAsInt();
             String summary = dish.get("summary").getAsString();
             int minutes = dish.get("cook_minutes").getAsInt();
             String steps = dish.get("steps").getAsString();
-            dbAdder.newRecipe(dishName, servings, author, type, calorie, summary, minutes, steps);
+            dbAdder.newRecipe(dishName, servings, author, null, type, calorie, summary, minutes, steps);
             System.out.println("Added recipe: " + dishName);
         }
     }

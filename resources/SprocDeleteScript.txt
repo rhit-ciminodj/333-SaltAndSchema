@@ -20,3 +20,19 @@ BEGIN
 	FROM Users
 	WHERE UserID = @userID
 END
+
+CREATE PROCEDURE deleteRestaurant(
+	@RestID int
+)
+AS
+BEGIN
+
+IF (@RestID IS NULL)
+THROW 51000, 'ID is null', 1;
+
+IF NOT EXISTS(SELECT * FROM Restaurant WHERE @RestID = RestID)
+THROW 51001, 'Restaurant could not be found', 1;
+
+DELETE FROM Restaurant WHERE @RestID = RestID
+
+END
