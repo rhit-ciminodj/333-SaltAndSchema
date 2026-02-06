@@ -103,7 +103,7 @@ END
 GO
 USE [SaltAndSchema]
 GO
-/****** Object:  StoredProcedure [dbo].[newRecipe]    Script Date: 2/5/2026 5:08:02 PM ******/
+/****** Object:  StoredProcedure [dbo].[newRecipe]    Script Date: 2/5/2026 7:28:48 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -113,6 +113,7 @@ ALTER   PROCEDURE [dbo].[newRecipe]
 	@Name nvarchar(20),
 	@ServingSize smallint = 0,
 	@UserAuthor nvarchar(20) = null,
+	@RestName nvarchar(20) = null,
 	@TypeOfDish nvarchar(10) = 'Not Set',
 	@Calories smallint = 0,
 	@Description nvarchar(200) = 'Not Set',
@@ -128,14 +129,17 @@ BEGIN
 		THROW 51011, 'Null Input', 1
 		RETURN
 	END
-	IF (@UserAuthor IS NOT NULL)
+	IF (@UserAuthor IS NOT NULL AND @RestID IS NOT nuLL)
 	BEGIN;
+		THROW 51000, 'Cannot be both User and RestID not null', 1
+	END
+	IF (@UserAuthor IS NOT NULL)
+	BEGIN
 		SELECT @UserAuthorID = UserID FROM Users WHERE Username = @UserAuthor
 	END
-	INSERT INTO Recipe ([Name], ServingSize, UserAuthorID, TypeOfDish, Calories, [Description], TimeToCook, InstructionSet) 
-	VALUES (@Name, @ServingSize, @UserAuthorID, @TypeOfDish, @Calories, @Description, @TimeToCook, @InstructionSet)
+	INSERT INTO Recipe ([Name], ServingSize, UserAuthorID, RestaurantAuthorId, TypeOfDish, Calories, [Description], TimeToCook, InstructionSet) 
+	VALUES (@Name, @ServingSize, @UserAuthorID, @RestName, @TypeOfDish, @Calories, @Description, @TimeToCook, @InstructionSet)
 END
-GO
 CREATE OR ALTER PROCEDURE newPair
 (
 	@MainID int,
