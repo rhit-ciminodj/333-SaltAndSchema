@@ -163,7 +163,8 @@ export const userApi = {
   // Get user by username (fetches all and filters)
   getByUsername: async (username) => {
     const users = await userApi.getAll();
-    return users.find(u => u.username === username) || null;
+    const normalized = username?.toLowerCase();
+    return users.find(u => u.username?.toLowerCase() === normalized) || null;
   },
 
   // Register a new user
@@ -182,6 +183,9 @@ export const userApi = {
     await api.post('/users/login', { username, password });
     // If successful, fetch user data
     const user = await userApi.getByUsername(username);
+    if (!user) {
+      throw new Error('User record not found after login.');
+    }
     return user;
   },
 
