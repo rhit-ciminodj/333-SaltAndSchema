@@ -23,11 +23,11 @@ public class Recipe {
 
     @Column(name = "UserAuthorID",
         nullable = true)
-    private int userAuthorId;
+    private Integer userAuthorId;
 
     @Column(name = "RestaurantAuthorId",
         nullable = true)
-    private int restaurantAuthorId;
+    private Integer restaurantAuthorId;
     
     @Column(name = "TypeOfDish",
         nullable = true, length = 10
@@ -60,10 +60,10 @@ public class Recipe {
     public void setName(String name) { this.name = name; }
     public Short getServingSize() { return servingSize; }
     public void setServingSize(Short servingSize) { this.servingSize = servingSize    ; }
-    public int getUserAuthorId() { return userAuthorId; }
-    public void setUserAuthorId(int userAuthorId) { this.userAuthorId = userAuthorId; }
-    public int getRestaurantAuthorId() { return restaurantAuthorId; }
-    public void setRestaurantAuthorId(int restaurantAuthorId) { this.restaurantAuthorId = restaurantAuthorId; }
+    public Integer getUserAuthorId() { return userAuthorId; }
+    public void setUserAuthorId(Integer userAuthorId) { this.userAuthorId = userAuthorId; }
+    public Integer getRestaurantAuthorId() { return restaurantAuthorId; }
+    public void setRestaurantAuthorId(Integer restaurantAuthorId) { this.restaurantAuthorId = restaurantAuthorId; }
     public String getTypeOfDish() { return typeOfDish; }
     public void setTypeOfDish(String typeOfDish) { this.typeOfDish = typeOfDish; }
     public Short getCalories() { return calories; }

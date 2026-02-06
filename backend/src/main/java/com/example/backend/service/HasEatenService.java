@@ -1,13 +1,15 @@
 package com.example.backend.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.simple.SimpleJdbcCall;
-import org.springframework.stereotype.Service;
+import java.util.List;
 
 import javax.sql.DataSource;
-import java.util.HashMap;
-import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Service;
+
+import com.example.backend.entity.HasEaten;
+import com.example.backend.entity.HasEatenId;
 
 @Service
 public class HasEatenService {
@@ -19,16 +21,71 @@ public class HasEatenService {
         this.jdbcTemplate = new JdbcTemplate(dataSource);
     }
 
+    public List<HasEaten> getHasEatenHistory(Long userId) {
+        return jdbcTemplate.query("EXEC getHasEatenByUser @UserID=?", (rs, rowNum) -> {
+            HasEaten hasEaten = new HasEaten();
+            HasEatenId id = new HasEatenId(rs.getInt("UserID"), rs.getInt("RecipeID"));
+            hasEaten.setId(id);
+            hasEaten.setFavorites(rs.getBoolean("Favorites"));
+            hasEaten.setStars(rs.getInt("Stars"));
+            return hasEaten;
+        }, userId);
+    }
+
+    public List<HasEaten> getFavoriteRecipes(Long userId) {
+        return jdbcTemplate.query("EXEC getUserFavorites @UserID=?", (rs, rowNum) -> {
+            HasEaten hasEaten = new HasEaten();
+            HasEatenId id = new HasEatenId(rs.getInt("UserID"), rs.getInt("RecipeID"));
+            hasEaten.setId(id);
+            hasEaten.setFavorites(rs.getBoolean("Favorites"));
+            hasEaten.setStars(rs.getInt("Stars"));
+            return hasEaten;
+        }, userId);
+    }
+
+    public HasEaten getUserRecipeRating(Integer userId, Integer recipeId) {
+        List<HasEaten> results = jdbcTemplate.query("EXEC getHasEatenRecord @UserID=?, @RecipeID=?", (rs, rowNum) -> {
+            HasEaten hasEaten = new HasEaten();
+            HasEatenId id = new HasEatenId(rs.getInt("UserID"), rs.getInt("RecipeID"));
+            hasEaten.setId(id);
+            hasEaten.setFavorites(rs.getBoolean("Favorites"));
+            hasEaten.setStars(rs.getInt("Stars"));
+            return hasEaten;
+        }, userId, recipeId);
+        return results.isEmpty() ? null : results.get(0);
+    }
+
     public void userHasEaten(Integer userId, Integer recipeId, Boolean favorites, Integer stars) {
-        SimpleJdbcCall jdbcCall = new SimpleJdbcCall(jdbcTemplate)
-                .withProcedureName("userHasEaten");
+        Integer count = jdbcTemplate.queryForObject("EXEC hasEatenExists @UserID=?, @RecipeID=?", Integer.class, userId, recipeId);
+        
+        if (count != null && count > 0) {
+            jdbcTemplate.update("EXEC updateHasEaten @UserID=?, @RecipeID=?, @Favorites=?, @Stars=?",
+                userId, recipeId, favorites != null ? favorites : false, stars);
+        } else {
+            jdbcTemplate.update("EXEC userHasEaten @UserID=?, @RecipeID=?, @Favorites=?, @Stars=?",
+                userId, recipeId, favorites != null ? favorites : false, stars);
+        }
+    }
 
-        Map<String, Object> inParams = new HashMap<>();
-        inParams.put("UserID", userId);
-        inParams.put("RecipeID", recipeId);
-        inParams.put("Favorites", favorites != null ? favorites : false);
-        inParams.put("Stars", stars);
+    public void updateFavoriteStatus(Integer userId, Integer recipeId, Boolean favorites) {
+        Integer count = jdbcTemplate.queryForObject("EXEC hasEatenExists @UserID=?, @RecipeID=?", Integer.class, userId, recipeId);
+        
+        if (count != null && count > 0) {
+            jdbcTemplate.update("EXEC updateHasEaten @UserID=?, @RecipeID=?, @Favorites=?", userId, recipeId, favorites);
+        } else {
+            jdbcTemplate.update("EXEC userHasEaten @UserID=?, @RecipeID=?, @Favorites=?, @Stars=?", 
+                userId, recipeId, favorites, null);
+        }
+    }
 
-        jdbcCall.execute(inParams);
+    public void updateStars(Integer userId, Integer recipeId, Integer stars) {
+        Integer count = jdbcTemplate.queryForObject("EXEC hasEatenExists @UserID=?, @RecipeID=?", Integer.class, userId, recipeId);
+        
+        if (count != null && count > 0) {
+            jdbcTemplate.update("EXEC updateHasEaten @UserID=?, @RecipeID=?, @Stars=?", userId, recipeId, stars);
+        } else {
+            jdbcTemplate.update("EXEC userHasEaten @UserID=?, @RecipeID=?, @Favorites=?, @Stars=?", 
+                userId, recipeId, false, stars);
+        }
     }
 }

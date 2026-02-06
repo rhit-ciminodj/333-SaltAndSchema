@@ -1,4 +1,4 @@
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { 
   ChefHat, 
   UtensilsCrossed, 
@@ -10,8 +10,8 @@ import {
   Menu,
   X
 } from 'lucide-react';
-import { useState } from 'react';
-import { currentUser } from '../../data/mockData';
+import { useState, useEffect } from 'react';
+import { authUtils } from '../../services/api';
 
 const navItems = [
   { to: '/', icon: Home, label: 'Home' },
@@ -25,6 +25,15 @@ const navItems = [
 
 export function Layout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [user, setUser] = useState(null);
+  const location = useLocation();
+  
+  // Check for user on mount and route changes
+  useEffect(() => {
+    setUser(authUtils.getUser());
+  }, [location]);
+  
+  const username = user?.username || 'Guest';
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -70,12 +79,12 @@ export function Layout() {
             {/* User Info (Desktop) */}
             <div className="hidden md:flex items-center gap-3">
               <div className="text-right">
-                <p className="text-sm font-medium text-white">{currentUser.username}</p>
+                <p className="text-sm font-medium text-white">{username}</p>
                 <p className="text-xs text-zinc-500">Member</p>
               </div>
               <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-600 rounded-full flex items-center justify-center">
                 <span className="text-black font-bold">
-                  {currentUser.username.charAt(0)}
+                  {username.charAt(0)}
                 </span>
               </div>
             </div>

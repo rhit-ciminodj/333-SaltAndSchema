@@ -3,14 +3,11 @@ package com.example.backend.service;
 import com.example.backend.entity.GroceryStores;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.simple.SimpleJdbcCall;
 import org.springframework.stereotype.Service;
 
 import javax.sql.DataSource;
 import java.math.BigDecimal;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @Service
 public class GroceryStoreService {
@@ -46,25 +43,10 @@ public class GroceryStoreService {
     }
 
     public void createStore(String name, String address) {
-        SimpleJdbcCall jdbcCall = new SimpleJdbcCall(jdbcTemplate)
-                .withProcedureName("newGroceryStore");
-
-        Map<String, Object> inParams = new HashMap<>();
-        inParams.put("Name", name);
-        inParams.put("Address", address);
-
-        jdbcCall.execute(inParams);
+        jdbcTemplate.update("EXEC newGroceryStore @Name=?, @Address=?", name, address);
     }
 
     public void soldByStore(Integer ingredientId, Integer storeId, BigDecimal price) {
-        SimpleJdbcCall jdbcCall = new SimpleJdbcCall(jdbcTemplate)
-                .withProcedureName("soldByStore");
-
-        Map<String, Object> inParams = new HashMap<>();
-        inParams.put("IngredientID", ingredientId);
-        inParams.put("StoreID", storeId);
-        inParams.put("Price", price);
-
-        jdbcCall.execute(inParams);
+        jdbcTemplate.update("EXEC soldByStore @IngredientID=?, @StoreID=?, @Price=?", ingredientId, storeId, price);
     }
 }

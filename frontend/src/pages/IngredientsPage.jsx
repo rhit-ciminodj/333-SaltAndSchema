@@ -1,19 +1,39 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { ShoppingBasket, Filter, DollarSign } from 'lucide-react';
-import { Card, CardBody, Badge, SearchInput } from '../components/ui';
-import { ingredients, getIngredientWithPrices } from '../data/mockData';
+import { ShoppingBasket, Filter, Plus } from 'lucide-react';
+import { Card, CardBody, SearchInput, Button, Input } from '../components/ui';
+import { ingredientApi } from '../services/api';
 
 export function IngredientsPage() {
+  const [ingredients, setIngredients] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [newIngredient, setNewIngredient] = useState({ name: '', description: '' });
+  const [createLoading, setCreateLoading] = useState(false);
+  const [createError, setCreateError] = useState('');
 
-  const ingredientsWithPrices = useMemo(() => 
-    ingredients.map(i => getIngredientWithPrices(i.ingredientsID)),
-    []
-  );
+  useEffect(() => {
+    loadIngredients();
+  }, []);
+
+  const loadIngredients = async () => {
+    try {
+      setLoading(true);
+      const data = await ingredientApi.getAll();
+      setIngredients(data);
+      setError('');
+    } catch (err) {
+      setError('Failed to load ingredients');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredIngredients = useMemo(() => {
-    let filtered = ingredientsWithPrices;
+    let filtered = [...ingredients];
 
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
@@ -24,15 +44,93 @@ export function IngredientsPage() {
     }
 
     return filtered.sort((a, b) => a.name.localeCompare(b.name));
-  }, [ingredientsWithPrices, searchQuery]);
+  }, [ingredients, searchQuery]);
+
+  const handleCreateIngredient = async (e) => {
+    e.preventDefault();
+    setCreateLoading(true);
+    setCreateError('');
+    try {
+      await ingredientApi.create(newIngredient);
+      setShowCreateForm(false);
+      setNewIngredient({ name: '', description: '' });
+      loadIngredients();
+    } catch (err) {
+      const errData = err.response?.data;
+      const errMsg = typeof errData === 'string' ? errData : errData?.message || JSON.stringify(errData) || 'Failed to create ingredient';
+      setCreateError(errMsg);
+    } finally {
+      setCreateLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
+        <ShoppingBasket className="w-16 h-16 text-zinc-700 mx-auto mb-4 animate-pulse" />
+        <p className="text-zinc-400">Loading ingredients...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
+        <ShoppingBasket className="w-16 h-16 text-red-500 mx-auto mb-4" />
+        <p className="text-red-400">{error}</p>
+        <Button onClick={loadIngredients} className="mt-4">Retry</Button>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold text-white mb-2">Ingredients</h1>
-        <p className="text-zinc-400">Browse {ingredients.length} ingredients and find the best prices</p>
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h1 className="text-4xl font-bold text-white mb-2">Ingredients</h1>
+          <p className="text-zinc-400">Browse {ingredients.length} ingredients</p>
+        </div>
+        <Button onClick={() => setShowCreateForm(!showCreateForm)}>
+          <Plus className="w-4 h-4" />
+          Add Ingredient
+        </Button>
       </div>
+
+      {/* Create Form */}
+      {showCreateForm && (
+        <Card className="mb-8" hover={false}>
+          <CardBody>
+            <h3 className="text-lg font-semibold text-white mb-4">Add New Ingredient</h3>
+            <form onSubmit={handleCreateIngredient} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input
+                label="Name"
+                value={newIngredient.name}
+                onChange={(e) => setNewIngredient({ ...newIngredient, name: e.target.value })}
+                required
+                maxLength={20}
+              />
+              <Input
+                label="Description"
+                value={newIngredient.description}
+                onChange={(e) => setNewIngredient({ ...newIngredient, description: e.target.value })}
+                maxLength={200}
+              />
+              {createError && (
+                <div className="md:col-span-2 text-red-400 text-sm">{createError}</div>
+              )}
+              <div className="md:col-span-2 flex gap-2">
+                <Button type="submit" disabled={createLoading}>
+                  {createLoading ? 'Adding...' : 'Add Ingredient'}
+                </Button>
+                <Button type="button" variant="secondary" onClick={() => setShowCreateForm(false)}>
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </CardBody>
+        </Card>
+      )}
 
       {/* Search */}
       <Card className="mb-8" hover={false}>
@@ -57,57 +155,23 @@ export function IngredientsPage() {
 
       {/* Ingredients Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {filteredIngredients.map((ingredient) => {
-          const lowestPrice = ingredient.prices.length > 0 
-            ? Math.min(...ingredient.prices.map(p => p.price))
-            : null;
-          const highestPrice = ingredient.prices.length > 0 
-            ? Math.max(...ingredient.prices.map(p => p.price))
-            : null;
-
-          return (
-            <Link key={ingredient.ingredientsID} to={`/ingredients/${ingredient.ingredientsID}`}>
-              <Card className="h-full group">
-                <div className="aspect-square bg-gradient-to-br from-zinc-800 to-zinc-900 relative overflow-hidden">
-                  <ShoppingBasket className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 text-zinc-700 group-hover:text-emerald-500/30 transition-colors" />
-                  {ingredient.prices.length > 0 && (
-                    <div className="absolute top-3 right-3">
-                      <Badge variant="success">
-                        {ingredient.prices.length} store{ingredient.prices.length !== 1 ? 's' : ''}
-                      </Badge>
-                    </div>
-                  )}
-                </div>
-                <CardBody>
-                  <h3 className="font-semibold text-white mb-2 group-hover:text-amber-400 transition-colors">
-                    {ingredient.name}
-                  </h3>
-                  <p className="text-zinc-500 text-sm mb-3 line-clamp-2">
-                    {ingredient.description}
-                  </p>
-                  {lowestPrice !== null && (
-                    <div className="flex items-center gap-1 text-emerald-400">
-                      <DollarSign className="w-4 h-4" />
-                      <span className="font-semibold">
-                        {lowestPrice === highestPrice 
-                          ? `$${lowestPrice.toFixed(2)}`
-                          : `$${lowestPrice.toFixed(2)} - $${highestPrice.toFixed(2)}`
-                        }
-                      </span>
-                    </div>
-                  )}
-                  {ingredient.substitutes && ingredient.substitutes.length > 0 && (
-                    <div className="mt-2">
-                      <span className="text-xs text-zinc-500">
-                        {ingredient.substitutes.length} substitute{ingredient.substitutes.length !== 1 ? 's' : ''} available
-                      </span>
-                    </div>
-                  )}
-                </CardBody>
-              </Card>
-            </Link>
-          );
-        })}
+        {filteredIngredients.map((ingredient) => (
+          <Link key={ingredient.ingredientsID} to={`/ingredients/${ingredient.ingredientsID}`}>
+            <Card className="h-full group">
+              <div className="aspect-square bg-gradient-to-br from-zinc-800 to-zinc-900 relative overflow-hidden">
+                <ShoppingBasket className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 text-zinc-700 group-hover:text-emerald-500/30 transition-colors" />
+              </div>
+              <CardBody>
+                <h3 className="font-semibold text-white mb-2 group-hover:text-amber-400 transition-colors">
+                  {ingredient.name}
+                </h3>
+                <p className="text-zinc-500 text-sm mb-3 line-clamp-2">
+                  {ingredient.description}
+                </p>
+              </CardBody>
+            </Card>
+          </Link>
+        ))}
       </div>
 
       {/* Empty State */}

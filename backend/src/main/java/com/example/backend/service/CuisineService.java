@@ -3,13 +3,10 @@ package com.example.backend.service;
 import com.example.backend.entity.Cuisine;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.simple.SimpleJdbcCall;
 import org.springframework.stereotype.Service;
 
 import javax.sql.DataSource;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @Service
 public class CuisineService {
@@ -45,24 +42,10 @@ public class CuisineService {
     }
 
     public void createCuisine(String name, String description) {
-        SimpleJdbcCall jdbcCall = new SimpleJdbcCall(jdbcTemplate)
-                .withProcedureName("newCuisine");
-
-        Map<String, Object> inParams = new HashMap<>();
-        inParams.put("Name", name);
-        inParams.put("Description", description);
-
-        jdbcCall.execute(inParams);
+        jdbcTemplate.update("EXEC newCuisine @Name=?, @Description=?", name, description);
     }
 
     public void addCuisineToRecipe(Integer cuisineId, Integer recipeId) {
-        SimpleJdbcCall jdbcCall = new SimpleJdbcCall(jdbcTemplate)
-                .withProcedureName("addCuisineToRecipe");
-
-        Map<String, Object> inParams = new HashMap<>();
-        inParams.put("CuisineID", cuisineId);
-        inParams.put("RecipeID", recipeId);
-
-        jdbcCall.execute(inParams);
+        jdbcTemplate.update("EXEC addCuisineToRecipe @CuisineID=?, @RecipeID=?", cuisineId, recipeId);
     }
 }

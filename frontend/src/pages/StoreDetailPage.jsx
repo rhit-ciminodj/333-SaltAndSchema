@@ -2,18 +2,46 @@ import { useParams, Link } from 'react-router-dom';
 import { 
   Store, 
   MapPin, 
-  ArrowLeft,
-  ShoppingBasket,
-  DollarSign
+  ArrowLeft
 } from 'lucide-react';
-import { Card, CardBody, CardHeader, Badge, Button } from '../components/ui';
-import { getStoreWithInventory } from '../data/mockData';
+import { Card, CardBody, CardHeader, Button } from '../components/ui';
+import { storeApi } from '../services/api';
+import { useState, useEffect } from 'react';
 
 export function StoreDetailPage() {
   const { id } = useParams();
-  const store = getStoreWithInventory(parseInt(id));
+  const [store, setStore] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  if (!store) {
+  useEffect(() => {
+    loadStore();
+  }, [id]);
+
+  const loadStore = async () => {
+    try {
+      setLoading(true);
+      const data = await storeApi.getById(parseInt(id));
+      setStore(data);
+      setError('');
+    } catch (err) {
+      setError('Store not found');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
+        <Store className="w-16 h-16 text-zinc-700 mx-auto mb-4 animate-pulse" />
+        <p className="text-zinc-400">Loading store...</p>
+      </div>
+    );
+  }
+
+  if (error || !store) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
         <Store className="w-16 h-16 text-zinc-700 mx-auto mb-4" />
@@ -28,8 +56,6 @@ export function StoreDetailPage() {
       </div>
     );
   }
-
-  const sortedInventory = [...store.inventory].sort((a, b) => a.name.localeCompare(b.name));
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -61,60 +87,29 @@ export function StoreDetailPage() {
               </div>
             </CardBody>
           </Card>
-
-          <Card hover={false}>
-            <CardBody>
-              <div className="text-center">
-                <p className="text-3xl font-bold text-amber-400">{store.inventory.length}</p>
-                <p className="text-sm text-zinc-400">Items Available</p>
-              </div>
-            </CardBody>
-          </Card>
         </div>
       </div>
 
-      {/* Inventory */}
+      {/* Store Info */}
       <Card hover={false}>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <ShoppingBasket className="w-5 h-5 text-emerald-400" />
-              <h2 className="text-2xl font-bold text-white">Available Ingredients</h2>
-            </div>
-            <Badge variant="success">{store.inventory.length} items</Badge>
-          </div>
+          <h2 className="text-2xl font-bold text-white">Store Details</h2>
         </CardHeader>
         <CardBody>
-          {sortedInventory.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {sortedInventory.map((item) => (
-                <Link 
-                  key={item.ingredientsID} 
-                  to={`/ingredients/${item.ingredientsID}`}
-                  className="flex items-center gap-4 p-4 rounded-xl bg-zinc-800/50 hover:bg-zinc-800 transition-colors group"
-                >
-                  <div className="w-14 h-14 bg-zinc-700 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <ShoppingBasket className="w-7 h-7 text-zinc-500 group-hover:text-emerald-500/50 transition-colors" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-white group-hover:text-amber-400 transition-colors truncate">
-                      {item.name}
-                    </p>
-                    <p className="text-sm text-zinc-500 truncate">{item.description}</p>
-                  </div>
-                  <div className="flex items-center gap-1 text-emerald-400 font-bold flex-shrink-0">
-                    <DollarSign className="w-4 h-4" />
-                    {item.price.toFixed(2)}
-                  </div>
-                </Link>
-              ))}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <p className="text-sm text-zinc-500 mb-1">Name</p>
+              <p className="text-white font-medium">{store.name}</p>
             </div>
-          ) : (
-            <div className="text-center py-12">
-              <ShoppingBasket className="w-12 h-12 text-zinc-700 mx-auto mb-3" />
-              <p className="text-zinc-400">No inventory data available</p>
+            <div>
+              <p className="text-sm text-zinc-500 mb-1">Store ID</p>
+              <p className="text-white font-medium">{store.storeID}</p>
             </div>
-          )}
+            <div className="md:col-span-2">
+              <p className="text-sm text-zinc-500 mb-1">Address</p>
+              <p className="text-white">{store.address}</p>
+            </div>
+          </div>
         </CardBody>
       </Card>
     </div>

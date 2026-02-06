@@ -1,20 +1,40 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { UtensilsCrossed, MapPin, Filter } from 'lucide-react';
-import { Card, CardBody, StarRating, SearchInput, Select } from '../components/ui';
-import { restaurants, getRestaurantWithMenu } from '../data/mockData';
+import { UtensilsCrossed, MapPin, Filter, Plus } from 'lucide-react';
+import { Card, CardBody, StarRating, SearchInput, Select, Button, Input } from '../components/ui';
+import { restaurantApi } from '../services/api';
 
 export function RestaurantsPage() {
+  const [restaurants, setRestaurants] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('rating');
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [newRestaurant, setNewRestaurant] = useState({ name: '', rating: 0, address: '' });
+  const [createLoading, setCreateLoading] = useState(false);
+  const [createError, setCreateError] = useState('');
 
-  const restaurantsWithMenu = useMemo(() => 
-    restaurants.map(r => getRestaurantWithMenu(r.restID)),
-    []
-  );
+  useEffect(() => {
+    loadRestaurants();
+  }, []);
+
+  const loadRestaurants = async () => {
+    try {
+      setLoading(true);
+      const data = await restaurantApi.getAll();
+      setRestaurants(data);
+      setError('');
+    } catch (err) {
+      setError('Failed to load restaurants');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredRestaurants = useMemo(() => {
-    let filtered = restaurantsWithMenu;
+    let filtered = [...restaurants];
 
     // Search filter
     if (searchQuery) {
@@ -28,32 +48,114 @@ export function RestaurantsPage() {
     // Sort
     switch (sortBy) {
       case 'rating':
-        filtered.sort((a, b) => b.rating - a.rating);
+        filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0));
         break;
       case 'name':
         filtered.sort((a, b) => a.name.localeCompare(b.name));
         break;
-      case 'menu':
-        filtered.sort((a, b) => b.menu.length - a.menu.length);
-        break;
     }
 
     return filtered;
-  }, [restaurantsWithMenu, searchQuery, sortBy]);
+  }, [restaurants, searchQuery, sortBy]);
 
   const sortOptions = [
     { value: 'rating', label: 'Highest Rated' },
     { value: 'name', label: 'Name' },
-    { value: 'menu', label: 'Most Menu Items' },
   ];
+
+  const handleCreateRestaurant = async (e) => {
+    e.preventDefault();
+    setCreateLoading(true);
+    setCreateError('');
+    try {
+      await restaurantApi.create(newRestaurant);
+      setShowCreateForm(false);
+      setNewRestaurant({ name: '', rating: 0, address: '' });
+      loadRestaurants();
+    } catch (err) {
+      setCreateError(err.response?.data || 'Failed to create restaurant');
+    } finally {
+      setCreateLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
+        <UtensilsCrossed className="w-16 h-16 text-zinc-700 mx-auto mb-4 animate-pulse" />
+        <p className="text-zinc-400">Loading restaurants...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
+        <UtensilsCrossed className="w-16 h-16 text-red-500 mx-auto mb-4" />
+        <p className="text-red-400">{error}</p>
+        <Button onClick={loadRestaurants} className="mt-4">Retry</Button>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold text-white mb-2">Restaurants</h1>
-        <p className="text-zinc-400">Discover {restaurants.length} amazing restaurants in your area</p>
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h1 className="text-4xl font-bold text-white mb-2">Restaurants</h1>
+          <p className="text-zinc-400">Discover {restaurants.length} amazing restaurants</p>
+        </div>
+        <Button onClick={() => setShowCreateForm(!showCreateForm)}>
+          <Plus className="w-4 h-4" />
+          Add Restaurant
+        </Button>
       </div>
+
+      {/* Create Form */}
+      {showCreateForm && (
+        <Card className="mb-8" hover={false}>
+          <CardBody>
+            <h3 className="text-lg font-semibold text-white mb-4">Add New Restaurant</h3>
+            <form onSubmit={handleCreateRestaurant} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Input
+                label="Name"
+                value={newRestaurant.name}
+                onChange={(e) => setNewRestaurant({ ...newRestaurant, name: e.target.value })}
+                required
+                maxLength={50}
+              />
+              <Input
+                label="Rating (0-5)"
+                type="number"
+                step="0.1"
+                min="0"
+                max="5"
+                value={newRestaurant.rating}
+                onChange={(e) => setNewRestaurant({ ...newRestaurant, rating: parseFloat(e.target.value) })}
+              />
+              <Input
+                label="Address"
+                value={newRestaurant.address}
+                onChange={(e) => setNewRestaurant({ ...newRestaurant, address: e.target.value })}
+                required
+                maxLength={50}
+              />
+              {createError && (
+                <div className="md:col-span-3 text-red-400 text-sm">{createError}</div>
+              )}
+              <div className="md:col-span-3 flex gap-2">
+                <Button type="submit" disabled={createLoading}>
+                  {createLoading ? 'Adding...' : 'Add Restaurant'}
+                </Button>
+                <Button type="button" variant="secondary" onClick={() => setShowCreateForm(false)}>
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </CardBody>
+        </Card>
+      )}
 
       {/* Filters */}
       <Card className="mb-8" hover={false}>
@@ -90,26 +192,16 @@ export function RestaurantsPage() {
               <div className="aspect-[16/9] bg-gradient-to-br from-zinc-800 to-zinc-900 relative overflow-hidden">
                 <UtensilsCrossed className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 text-zinc-700 group-hover:text-amber-500/30 transition-colors" />
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                  <StarRating rating={restaurant.rating} size="md" />
+                  <StarRating rating={restaurant.rating || 0} size="md" />
                 </div>
               </div>
               <CardBody>
                 <h3 className="text-xl font-semibold text-white mb-2 group-hover:text-amber-400 transition-colors">
                   {restaurant.name}
                 </h3>
-                <div className="flex items-center gap-2 text-zinc-400 mb-4">
+                <div className="flex items-center gap-2 text-zinc-400">
                   <MapPin className="w-4 h-4 flex-shrink-0" />
                   <span className="text-sm truncate">{restaurant.address}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-zinc-500">
-                    {restaurant.menu.length} menu item{restaurant.menu.length !== 1 ? 's' : ''}
-                  </span>
-                  {restaurant.menu.length > 0 && (
-                    <span className="text-amber-400">
-                      ${Math.min(...restaurant.menu.map(m => m.costOfItem)).toFixed(2)} - ${Math.max(...restaurant.menu.map(m => m.costOfItem)).toFixed(2)}
-                    </span>
-                  )}
                 </div>
               </CardBody>
             </Card>

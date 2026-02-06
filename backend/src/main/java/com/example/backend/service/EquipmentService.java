@@ -3,13 +3,10 @@ package com.example.backend.service;
 import com.example.backend.entity.Equipment;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.simple.SimpleJdbcCall;
 import org.springframework.stereotype.Service;
 
 import javax.sql.DataSource;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @Service
 public class EquipmentService {
@@ -45,24 +42,10 @@ public class EquipmentService {
     }
 
     public void createEquipment(String name, String description) {
-        SimpleJdbcCall jdbcCall = new SimpleJdbcCall(jdbcTemplate)
-                .withProcedureName("newEquipment");
-
-        Map<String, Object> inParams = new HashMap<>();
-        inParams.put("Name", name);
-        inParams.put("Description", description);
-
-        jdbcCall.execute(inParams);
+        jdbcTemplate.update("EXEC newEquipment @Name=?, @Description=?", name, description);
     }
 
     public void addEquipToRecipe(Integer recipeId, Integer equipmentId) {
-        SimpleJdbcCall jdbcCall = new SimpleJdbcCall(jdbcTemplate)
-                .withProcedureName("addEquipToRecipe");
-
-        Map<String, Object> inParams = new HashMap<>();
-        inParams.put("RecipeID", recipeId);
-        inParams.put("EquipmentID", equipmentId);
-
-        jdbcCall.execute(inParams);
+        jdbcTemplate.update("EXEC addEquipToRecipe @RecipeID=?, @EquipmentID=?", recipeId, equipmentId);
     }
 }

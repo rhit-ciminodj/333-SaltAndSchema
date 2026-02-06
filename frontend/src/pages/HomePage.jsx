@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   ChefHat, 
@@ -10,10 +11,7 @@ import {
   Flame
 } from 'lucide-react';
 import { Card, CardBody, Badge, StarRating } from '../components/ui';
-import { recipes, restaurants, getRecipeWithDetails } from '../data/mockData';
-
-const featuredRecipes = recipes.slice(0, 4).map(r => getRecipeWithDetails(r.recipeID));
-const featuredRestaurants = restaurants.slice(0, 3);
+import { recipeApi, restaurantApi } from '../services/api';
 
 const features = [
   {
@@ -47,6 +45,28 @@ const features = [
 ];
 
 export function HomePage() {
+  const [featuredRecipes, setFeaturedRecipes] = useState([]);
+  const [featuredRestaurants, setFeaturedRestaurants] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [recipes, restaurants] = await Promise.all([
+          recipeApi.getAll(),
+          restaurantApi.getAll()
+        ]);
+        setFeaturedRecipes(recipes.slice(0, 4));
+        setFeaturedRestaurants(restaurants.slice(0, 3));
+      } catch (err) {
+        console.error('Failed to load featured content:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, []);
+
   return (
     <div>
       {/* Hero Section */}
@@ -131,37 +151,40 @@ export function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {featuredRecipes.map((recipe) => (
-              <Link key={recipe.recipeID} to={`/recipes/${recipe.recipeID}`}>
-                <Card className="h-full group">
-                  <div className="aspect-video bg-gradient-to-br from-zinc-800 to-zinc-900 relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                    <div className="absolute bottom-3 left-3 right-3">
-                      <Badge variant="primary">{recipe.typeOfDish}</Badge>
+            {loading ? (
+              <div className="col-span-4 text-center py-8 text-zinc-400">Loading recipes...</div>
+            ) : featuredRecipes.length === 0 ? (
+              <div className="col-span-4 text-center py-8 text-zinc-400">No recipes found</div>
+            ) : (
+              featuredRecipes.map((recipe) => (
+                <Link key={recipe.recipeID} to={`/recipes/${recipe.recipeID}`}>
+                  <Card className="h-full group">
+                    <div className="aspect-video bg-gradient-to-br from-zinc-800 to-zinc-900 relative overflow-hidden">
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                      <div className="absolute bottom-3 left-3 right-3">
+                        <Badge variant="primary">{recipe.typeOfDish}</Badge>
+                      </div>
+                      <ChefHat className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 text-zinc-700 group-hover:text-amber-500/30 transition-colors" />
                     </div>
-                    <ChefHat className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 text-zinc-700 group-hover:text-amber-500/30 transition-colors" />
-                  </div>
-                  <CardBody>
-                    <h3 className="font-semibold text-white mb-2 group-hover:text-amber-400 transition-colors">
-                      {recipe.name}
-                    </h3>
-                    <div className="flex items-center gap-4 text-sm text-zinc-400 mb-3">
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-4 h-4" />
-                        {recipe.timeToCook} min
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Flame className="w-4 h-4" />
-                        {recipe.calories} cal
-                      </span>
-                    </div>
-                    {recipe.avgRating > 0 && (
-                      <StarRating rating={recipe.avgRating} size="sm" />
-                    )}
-                  </CardBody>
-                </Card>
-              </Link>
-            ))}
+                    <CardBody>
+                      <h3 className="font-semibold text-white mb-2 group-hover:text-amber-400 transition-colors">
+                        {recipe.name}
+                      </h3>
+                      <div className="flex items-center gap-4 text-sm text-zinc-400">
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-4 h-4" />
+                          {recipe.timeToCook} min
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Flame className="w-4 h-4" />
+                          {recipe.calories} cal
+                        </span>
+                      </div>
+                    </CardBody>
+                  </Card>
+                </Link>
+              ))
+            )}
           </div>
           
           <div className="mt-8 text-center sm:hidden">
@@ -192,24 +215,27 @@ export function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {featuredRestaurants.map((restaurant) => (
-              <Link key={restaurant.restID} to={`/restaurants/${restaurant.restID}`}>
-                <Card className="h-full group">
-                  <div className="aspect-[16/9] bg-gradient-to-br from-zinc-800 to-zinc-900 relative overflow-hidden">
-                    <UtensilsCrossed className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 text-zinc-700 group-hover:text-amber-500/30 transition-colors" />
-                  </div>
-                  <CardBody>
-                    <div className="flex items-start justify-between mb-2">
-                      <h3 className="font-semibold text-white group-hover:text-amber-400 transition-colors">
+            {loading ? (
+              <div className="col-span-3 text-center py-8 text-zinc-400">Loading restaurants...</div>
+            ) : featuredRestaurants.length === 0 ? (
+              <div className="col-span-3 text-center py-8 text-zinc-400">No restaurants found</div>
+            ) : (
+              featuredRestaurants.map((restaurant) => (
+                <Link key={restaurant.restID} to={`/restaurants/${restaurant.restID}`}>
+                  <Card className="h-full group">
+                    <div className="aspect-[16/9] bg-gradient-to-br from-zinc-800 to-zinc-900 relative overflow-hidden">
+                      <UtensilsCrossed className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 text-zinc-700 group-hover:text-amber-500/30 transition-colors" />
+                    </div>
+                    <CardBody>
+                      <h3 className="font-semibold text-white group-hover:text-amber-400 transition-colors mb-2">
                         {restaurant.name}
                       </h3>
-                      <StarRating rating={restaurant.rating} size="sm" showValue={false} />
-                    </div>
-                    <p className="text-zinc-400 text-sm">{restaurant.address}</p>
-                  </CardBody>
-                </Card>
-              </Link>
-            ))}
+                      <p className="text-zinc-400 text-sm">{restaurant.address}</p>
+                    </CardBody>
+                  </Card>
+                </Link>
+              ))
+            )}
           </div>
         </div>
       </section>

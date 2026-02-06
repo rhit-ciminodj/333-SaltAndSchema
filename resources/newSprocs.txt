@@ -1,0 +1,223 @@
+CREATE OR ALTER PROCEDURE getHasEatenByUser
+(
+    @UserID int
+)
+AS
+BEGIN
+    IF (@UserID IS NULL)
+    BEGIN;
+        THROW 51100, 'Null Input', 1
+        RETURN
+    END
+    SELECT UserID, RecipeID, Favorites, Stars FROM HasEaten WHERE UserID = @UserID
+END
+GO
+CREATE OR ALTER PROCEDURE getUserFavorites
+(
+    @UserID int
+)
+AS
+BEGIN
+    IF (@UserID IS NULL)
+    BEGIN;
+        THROW 51101, 'Null Input', 1
+        RETURN
+    END
+    SELECT UserID, RecipeID, Favorites, Stars FROM HasEaten WHERE UserID = @UserID AND Favorites = 1
+END
+GO
+CREATE OR ALTER PROCEDURE getHasEatenRecord
+(
+    @UserID int,
+    @RecipeID int
+)
+AS
+BEGIN
+    IF (@UserID IS NULL OR @RecipeID IS NULL)
+    BEGIN;
+        THROW 51102, 'Null Input', 1
+        RETURN
+    END
+    SELECT UserID, RecipeID, Favorites, Stars FROM HasEaten WHERE UserID = @UserID AND RecipeID = @RecipeID
+END
+GO
+CREATE OR ALTER PROCEDURE hasEatenExists
+(
+    @UserID int,
+    @RecipeID int
+)
+AS
+BEGIN
+    IF (@UserID IS NULL OR @RecipeID IS NULL)
+    BEGIN;
+        THROW 51103, 'Null Input', 1
+        RETURN
+    END
+    SELECT COUNT(*) AS RecordCount FROM HasEaten WHERE UserID = @UserID AND RecipeID = @RecipeID
+END
+GO
+CREATE OR ALTER PROCEDURE updateHasEaten
+(
+    @UserID int,
+    @RecipeID int,
+    @Favorites bit = NULL,
+    @Stars int = NULL
+)
+AS
+BEGIN
+    IF (@UserID IS NULL OR @RecipeID IS NULL)
+    BEGIN;
+        THROW 51104, 'Null Input', 1
+        RETURN
+    END
+    UPDATE HasEaten SET Favorites = COALESCE(@Favorites, Favorites), Stars = COALESCE(@Stars, Stars) WHERE UserID = @UserID AND RecipeID = @RecipeID
+END
+GO
+CREATE OR ALTER PROCEDURE getAllUsers
+AS
+BEGIN
+    SELECT UserID, Username, [Address] FROM Users
+END
+GO
+
+CREATE OR ALTER PROCEDURE getUserById
+(
+    @UserID int
+)
+AS
+BEGIN
+    IF (@UserID IS NULL)
+    BEGIN;
+        THROW 51105, 'Null Input', 1
+        RETURN
+    END
+    SELECT UserID, Username, [Address] FROM Users WHERE UserID = @UserID
+END
+GO
+CREATE OR ALTER PROCEDURE getUserByUsername
+(
+    @Username nvarchar(20)
+)
+AS
+BEGIN
+    IF (@Username IS NULL)
+    BEGIN;
+        THROW 51106, 'Null Input', 1
+        RETURN
+    END
+    SELECT UserID, Username, [Address] FROM Users WHERE Username = @Username
+END
+GO
+CREATE OR ALTER PROCEDURE getUserAuth
+(
+    @UserID int
+)
+AS
+BEGIN
+    IF (@UserID IS NULL)
+    BEGIN;
+        THROW 51107, 'Null Input', 1
+        RETURN
+    END
+    SELECT UserID, PasswordHash, Salt FROM UserAuth WHERE UserID = @UserID
+END
+GO
+CREATE OR ALTER PROCEDURE getAllRestaurants
+AS
+BEGIN
+    SELECT RestID, [Name], Rating, [Address] FROM Restaurant
+END
+GO
+CREATE OR ALTER PROCEDURE getRestaurantById
+(
+    @RestID int
+)
+AS
+BEGIN
+    IF (@RestID IS NULL)
+    BEGIN;
+        THROW 51108, 'Null Input', 1
+        RETURN
+    END
+    SELECT RestID, [Name], Rating, [Address] FROM Restaurant WHERE RestID = @RestID
+END
+GO
+CREATE OR ALTER PROCEDURE getAllIngredients
+AS
+BEGIN
+    SELECT IngredientsID, [Name], [Description] FROM Ingredients
+END
+GO
+CREATE OR ALTER PROCEDURE getIngredientById
+(
+    @IngredientID int
+)
+AS
+BEGIN
+    IF (@IngredientID IS NULL)
+    BEGIN;
+        THROW 51109, 'Null Input', 1
+        RETURN
+    END
+    SELECT IngredientsID, [Name], [Description] FROM Ingredients WHERE IngredientsID = @IngredientID
+END
+GO
+CREATE OR ALTER PROCEDURE getStoresByIngredient
+(
+    @IngredientID int
+)
+AS
+BEGIN
+    IF (@IngredientID IS NULL)
+    BEGIN;
+        THROW 51110, 'Null Input', 1
+        RETURN
+    END
+    SELECT gs.[Name] FROM GroceryStores gs
+    INNER JOIN SoldBy sb ON gs.StoreID = sb.StoreID
+    WHERE sb.IngredientID = @IngredientID
+END
+GO
+CREATE OR ALTER PROCEDURE getAllRecipes
+AS
+BEGIN
+    SELECT RecipeID, [Name], ServingSize, UserAuthorID, RestaurantAuthorId, 
+           TypeOfDish, Calories, [Description], TimeToCook, InstructionSet 
+    FROM Recipe
+END
+GO
+CREATE OR ALTER PROCEDURE getRecipeById
+(
+    @RecipeID int
+)
+AS
+BEGIN
+    IF (@RecipeID IS NULL)
+    BEGIN;
+        THROW 51111, 'Null Input', 1
+        RETURN
+    END
+    SELECT RecipeID, [Name], ServingSize, UserAuthorID, RestaurantAuthorId, 
+           TypeOfDish, Calories, [Description], TimeToCook, InstructionSet 
+    FROM Recipe WHERE RecipeID = @RecipeID
+END
+GO
+CREATE OR ALTER PROCEDURE getRecipeAvgStars
+(
+    @RecipeID int
+)
+AS
+BEGIN
+    IF (@RecipeID IS NULL)
+    BEGIN;
+        THROW 51112, 'Null Input', 1
+        RETURN
+    END
+    IF NOT EXISTS (SELECT 1 FROM Recipe r WHERE r.RecipeID = @RecipeID)
+    BEGIN;
+        THROW 51113, 'Recipe does not exist', 1
+        RETURN
+    END
+    SELECT AVG(CAST(Stars AS FLOAT)) AS AvgStars FROM HasEaten WHERE RecipeID = @RecipeID
+END
+GO

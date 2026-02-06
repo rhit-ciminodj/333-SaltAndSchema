@@ -1,19 +1,39 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { Store, MapPin, Filter, ShoppingBasket } from 'lucide-react';
-import { Card, CardBody, Badge, SearchInput } from '../components/ui';
-import { groceryStores, getStoreWithInventory } from '../data/mockData';
+import { Store, MapPin, Filter, Plus } from 'lucide-react';
+import { Card, CardBody, SearchInput, Button, Input } from '../components/ui';
+import { storeApi } from '../services/api';
 
 export function StoresPage() {
+  const [stores, setStores] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [newStore, setNewStore] = useState({ name: '', address: '' });
+  const [createLoading, setCreateLoading] = useState(false);
+  const [createError, setCreateError] = useState('');
 
-  const storesWithInventory = useMemo(() => 
-    groceryStores.map(s => getStoreWithInventory(s.storeID)),
-    []
-  );
+  useEffect(() => {
+    loadStores();
+  }, []);
+
+  const loadStores = async () => {
+    try {
+      setLoading(true);
+      const data = await storeApi.getAll();
+      setStores(data);
+      setError('');
+    } catch (err) {
+      setError('Failed to load stores');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredStores = useMemo(() => {
-    let filtered = storesWithInventory;
+    let filtered = [...stores];
 
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
@@ -24,15 +44,92 @@ export function StoresPage() {
     }
 
     return filtered.sort((a, b) => a.name.localeCompare(b.name));
-  }, [storesWithInventory, searchQuery]);
+  }, [stores, searchQuery]);
+
+  const handleCreateStore = async (e) => {
+    e.preventDefault();
+    setCreateLoading(true);
+    setCreateError('');
+    try {
+      await storeApi.create(newStore);
+      setShowCreateForm(false);
+      setNewStore({ name: '', address: '' });
+      loadStores();
+    } catch (err) {
+      setCreateError(err.response?.data || 'Failed to create store');
+    } finally {
+      setCreateLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
+        <Store className="w-16 h-16 text-zinc-700 mx-auto mb-4 animate-pulse" />
+        <p className="text-zinc-400">Loading stores...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
+        <Store className="w-16 h-16 text-red-500 mx-auto mb-4" />
+        <p className="text-red-400">{error}</p>
+        <Button onClick={loadStores} className="mt-4">Retry</Button>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold text-white mb-2">Grocery Stores</h1>
-        <p className="text-zinc-400">Find {groceryStores.length} grocery stores near you</p>
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h1 className="text-4xl font-bold text-white mb-2">Grocery Stores</h1>
+          <p className="text-zinc-400">Find {stores.length} grocery stores near you</p>
+        </div>
+        <Button onClick={() => setShowCreateForm(!showCreateForm)}>
+          <Plus className="w-4 h-4" />
+          Add Store
+        </Button>
       </div>
+
+      {/* Create Form */}
+      {showCreateForm && (
+        <Card className="mb-8" hover={false}>
+          <CardBody>
+            <h3 className="text-lg font-semibold text-white mb-4">Add New Store</h3>
+            <form onSubmit={handleCreateStore} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input
+                label="Name"
+                value={newStore.name}
+                onChange={(e) => setNewStore({ ...newStore, name: e.target.value })}
+                required
+                maxLength={20}
+              />
+              <Input
+                label="Address"
+                value={newStore.address}
+                onChange={(e) => setNewStore({ ...newStore, address: e.target.value })}
+                required
+                maxLength={50}
+              />
+              {createError && (
+                <div className="md:col-span-2 text-red-400 text-sm">{createError}</div>
+              )}
+              <div className="md:col-span-2 flex gap-2">
+                <Button type="submit" disabled={createLoading}>
+                  {createLoading ? 'Adding...' : 'Add Store'}
+                </Button>
+                <Button type="button" variant="secondary" onClick={() => setShowCreateForm(false)}>
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </CardBody>
+        </Card>
+      )}
 
       {/* Search */}
       <Card className="mb-8" hover={false}>
@@ -62,34 +159,15 @@ export function StoresPage() {
             <Card className="h-full group">
               <div className="aspect-video bg-gradient-to-br from-zinc-800 to-zinc-900 relative overflow-hidden">
                 <Store className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 text-zinc-700 group-hover:text-blue-500/30 transition-colors" />
-                <div className="absolute bottom-3 right-3">
-                  <Badge variant="info">
-                    {store.inventory.length} items
-                  </Badge>
-                </div>
               </div>
               <CardBody>
                 <h3 className="text-xl font-semibold text-white mb-2 group-hover:text-amber-400 transition-colors">
                   {store.name}
                 </h3>
-                <div className="flex items-start gap-2 text-zinc-400 mb-4">
+                <div className="flex items-start gap-2 text-zinc-400">
                   <MapPin className="w-4 h-4 flex-shrink-0 mt-0.5" />
                   <span className="text-sm">{store.address}</span>
                 </div>
-                {store.inventory.length > 0 && (
-                  <div className="flex flex-wrap gap-1">
-                    {store.inventory.slice(0, 3).map((item) => (
-                      <Badge key={item.ingredientsID} variant="default" className="text-xs">
-                        {item.name}
-                      </Badge>
-                    ))}
-                    {store.inventory.length > 3 && (
-                      <Badge variant="default" className="text-xs">
-                        +{store.inventory.length - 3} more
-                      </Badge>
-                    )}
-                  </div>
-                )}
               </CardBody>
             </Card>
           </Link>

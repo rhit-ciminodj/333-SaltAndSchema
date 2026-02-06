@@ -1,8 +1,10 @@
 import { useState } from 'react';
-import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardBody, CardHeader, Button, Input } from '../components/ui';
+import { userApi, authUtils } from '../services/api';
 
 export function LoginPage() {
+  const navigate = useNavigate();
   const [form, setForm] = useState({ username: '', address: '', password: '' });
   const [isRegistering, setIsRegistering] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -23,20 +25,17 @@ export function LoginPage() {
     setSuccess('');
 
     try {
-      const response = isRegistering
-        ? await axios.post('/api/users/register', {
-            username: form.username,
-            address: form.address,
-            password: form.password,
-          })
-        : await axios.post('/api/users/login', {
-            username: form.username,
-            password: form.password,
-          });
-      const fallbackMessage = isRegistering ? 'Account created.' : 'Login successful.';
-      const message = typeof response.data === 'string' ? response.data : fallbackMessage;
-      setSuccess(message);
-      setForm({ username: '', address: '', password: '' });
+      if (isRegistering) {
+        await userApi.register(form.username, form.address, form.password);
+        setSuccess('Account created! You can now sign in.');
+        setIsRegistering(false);
+        setForm({ username: form.username, address: '', password: '' });
+      } else {
+        const user = await userApi.login(form.username, form.password);
+        authUtils.saveUser(user);
+        setSuccess('Login successful! Redirecting...');
+        setTimeout(() => navigate('/profile'), 1000);
+      }
     } catch (err) {
       const fallbackMessage = isRegistering ? 'Registration failed.' : 'Login failed.';
       const message = err.response?.data || err.message || fallbackMessage;

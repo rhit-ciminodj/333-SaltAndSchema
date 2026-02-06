@@ -1,9 +1,7 @@
 package com.example.backend.service;
 
 import java.util.Base64;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
@@ -17,11 +15,7 @@ import javax.sql.DataSource;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.SqlParameter;
-import org.springframework.jdbc.core.simple.SimpleJdbcCall;
 import org.springframework.stereotype.Service;
-
-import java.sql.Types;
 
 import com.example.backend.entity.User;
 import com.example.backend.entity.UserAuth;
@@ -32,7 +26,6 @@ public class UserService {
 
 	private static final Random RANDOM = new SecureRandom();
 	private static final Base64.Encoder enc = Base64.getEncoder();
-	private static final Base64.Decoder dec = Base64.getDecoder();
 
     private final JdbcTemplate jdbcTemplate;
 
@@ -42,8 +35,7 @@ public class UserService {
     }
 
     public List<User> getAllUsers() {
-        String sql = "SELECT UserID, Username, Address FROM Users";
-        return jdbcTemplate.query(sql, (rs, rowNum) -> {
+        return jdbcTemplate.query("EXEC getAllUsers", (rs, rowNum) -> {
             User user = new User();
             user.setUserId(rs.getInt("UserID"));
             user.setUsername(rs.getString("Username"));
@@ -53,8 +45,7 @@ public class UserService {
     }
 
     public User getUserById(Integer userId) {
-        String sql = "SELECT UserID, Username, Address FROM Users WHERE UserID = ?";
-        List<User> users = jdbcTemplate.query(sql, (rs, rowNum) -> {
+        List<User> users = jdbcTemplate.query("EXEC getUserById @UserID=?", (rs, rowNum) -> {
             User user = new User();
             user.setUserId(rs.getInt("UserID"));
             user.setUsername(rs.getString("Username"));
@@ -65,8 +56,7 @@ public class UserService {
     }
 
     public User getUserByUsername(String username) {
-        String sql = "SELECT UserID, Username, Address FROM Users WHERE Username = ?";
-        List<User> users = jdbcTemplate.query(sql, (rs, rowNum) -> {
+        List<User> users = jdbcTemplate.query("EXEC getUserByUsername @Username=?", (rs, rowNum) -> {
             User user = new User();
             user.setUserId(rs.getInt("UserID"));
             user.setUsername(rs.getString("Username"));
@@ -77,8 +67,7 @@ public class UserService {
     }
 
 public UserAuth getUserAuthById(Integer userId) {
-    String sql = "SELECT UserID, PasswordHash, Salt FROM UserAuth WHERE UserID = ?";
-    List<UserAuth> auths = jdbcTemplate.query(sql, (rs, rowNum) -> {
+    List<UserAuth> auths = jdbcTemplate.query("EXEC getUserAuth @UserID=?", (rs, rowNum) -> {
         UserAuth auth = new UserAuth();
         auth.setUserId(rs.getInt("UserID"));
         auth.setPasswordHash(rs.getBytes("PasswordHash"));
@@ -100,9 +89,21 @@ public UserAuth getUserAuthById(Integer userId) {
                 return false;
             }
 
-            byte[] realSalt = dec.decode(auth.getSalt());
-            String hashedPassword = this.hashPassword(realSalt, password);
-            return hashedPassword.equals(new String(auth.getPasswordHash(), StandardCharsets.UTF_8));
+            byte[] storedSalt = auth.getSalt();
+            byte[] storedHash = auth.getPasswordHash();
+            
+            String hashedPassword = this.hashPassword(storedSalt, password);
+            byte[] computedHash = hashedPassword.getBytes(StandardCharsets.UTF_8);
+            
+            if (storedHash.length != computedHash.length) {
+                return false;
+            }
+            for (int i = 0; i < storedHash.length; i++) {
+                if (storedHash[i] != computedHash[i]) {
+                    return false;
+                }
+            }
+            return true;
         } catch (Exception e) {
             return false;
         }
@@ -111,70 +112,28 @@ public UserAuth getUserAuthById(Integer userId) {
 
 
     public void createUser(String username, String address) {
-        SimpleJdbcCall jdbcCall = new SimpleJdbcCall(jdbcTemplate)
-                .withProcedureName("newUser");
-
-        Map<String, Object> inParams = new HashMap<>();
-        inParams.put("Username", username);
-        inParams.put("Address", address);
-
-        jdbcCall.execute(inParams);
+        jdbcTemplate.update("EXEC newUser @Username=?, @Address=?", username, address);
     }
 
     public void changeUsername(Integer userId, String newUsername) {
-        SimpleJdbcCall jdbcCall = new SimpleJdbcCall(jdbcTemplate)
-                .withProcedureName("changeUsername");
-
-        Map<String, Object> inParams = new HashMap<>();
-        inParams.put("userID", userId);
-        inParams.put("newUsername", newUsername);
-
-        jdbcCall.execute(inParams);
+        jdbcTemplate.update("EXEC changeUsername @userID=?, @newUsername=?", userId, newUsername);
     }
 
     public void changeAddress(Integer userId, String newAddress) {
-        SimpleJdbcCall jdbcCall = new SimpleJdbcCall(jdbcTemplate)
-                .withProcedureName("changeAddress");
-
-        Map<String, Object> inParams = new HashMap<>();
-        inParams.put("userID", userId);
-        inParams.put("newAddress", newAddress);
-
-        jdbcCall.execute(inParams);
+        jdbcTemplate.update("EXEC changeAddress @userID=?, @newAddress=?", userId, newAddress);
     }
 
     public void deleteUser(Integer userId) {
-        SimpleJdbcCall jdbcCall = new SimpleJdbcCall(jdbcTemplate)
-                .withProcedureName("DeleteUser");
-
-        Map<String, Object> inParams = new HashMap<>();
-        inParams.put("userID", userId);
-
-        jdbcCall.execute(inParams);
+        jdbcTemplate.update("EXEC DeleteUser @userID=?", userId);
     }
 
     public void registerNewUser(String username, String address, String password) {
-        SimpleJdbcCall jdbcCall = new SimpleJdbcCall(jdbcTemplate)
-            .withProcedureName("registerNewUser")
-            .withSchemaName("dbo")
-            .withoutProcedureColumnMetaDataAccess()
-            .declareParameters(
-                new SqlParameter("Username", Types.NVARCHAR),
-                new SqlParameter("Address", Types.NVARCHAR),
-                new SqlParameter("PasswordHash", Types.VARBINARY),
-                new SqlParameter("Salt", Types.VARBINARY));
-
         byte[] newPasswordSalt = this.getNewSalt();
-		String hashedPassword = this.hashPassword(newPasswordSalt, password);
-        String saltBase64 = Base64.getEncoder().encodeToString(newPasswordSalt);
+        String hashedPasswordStr = this.hashPassword(newPasswordSalt, password);
+        byte[] hashedPasswordBytes = hashedPasswordStr.getBytes(StandardCharsets.UTF_8);
 
-        Map<String, Object> inParams = new HashMap<>();
-        inParams.put("Username", username);
-        inParams.put("Address", address);
-        inParams.put("PasswordHash", hashedPassword.getBytes(StandardCharsets.UTF_8));
-        inParams.put("Salt", saltBase64.getBytes(StandardCharsets.UTF_8));
-
-        jdbcCall.execute(inParams);
+        jdbcTemplate.update("EXEC registerNewUser @Username=?, @Address=?, @PasswordHash=?, @Salt=?",
+            username, address, hashedPasswordBytes, newPasswordSalt);
     }
 
     public byte[] getNewSalt() {

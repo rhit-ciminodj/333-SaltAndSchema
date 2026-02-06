@@ -3,13 +3,10 @@ package com.example.backend.service;
 import com.example.backend.entity.Recipe;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.simple.SimpleJdbcCall;
 import org.springframework.stereotype.Service;
 
 import javax.sql.DataSource;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @Service
 public class RecipeService {
@@ -22,9 +19,7 @@ public class RecipeService {
     }
 
     public List<Recipe> getAllRecipes() {
-        String sql = "SELECT RecipeID, Name, ServingSize, UserAuthorID, RestaurantAuthorId, " +
-                "TypeOfDish, Calories, Description, TimeToCook, InstructionSet FROM Recipe";
-        return jdbcTemplate.query(sql, (rs, rowNum) -> {
+        return jdbcTemplate.query("EXEC getAllRecipes", (rs, rowNum) -> {
             Recipe recipe = new Recipe();
             recipe.setRecipeId(rs.getInt("RecipeID"));
             recipe.setName(rs.getString("Name"));
@@ -41,9 +36,7 @@ public class RecipeService {
     }
 
     public Recipe getRecipeById(Integer recipeId) {
-        String sql = "SELECT RecipeID, Name, ServingSize, UserAuthorID, RestaurantAuthorId, " +
-                "TypeOfDish, Calories, Description, TimeToCook, InstructionSet FROM Recipe WHERE RecipeID = ?";
-        List<Recipe> recipes = jdbcTemplate.query(sql, (rs, rowNum) -> {
+        List<Recipe> recipes = jdbcTemplate.query("EXEC getRecipeById @RecipeID=?", (rs, rowNum) -> {
             Recipe recipe = new Recipe();
             recipe.setRecipeId(rs.getInt("RecipeID"));
             recipe.setName(rs.getString("Name"));
@@ -61,43 +54,38 @@ public class RecipeService {
     }
 
     public Double getRecipeStars(Integer recipeId) {
-        String sql = "SELECT AVG(CAST(Stars AS FLOAT)) as AvgStars FROM HasEaten WHERE RecipeID = ?";
-        return jdbcTemplate.queryForObject(sql, Double.class, recipeId);
+        return jdbcTemplate.queryForObject("EXEC getRecipeAvgStars @RecipeID=?", Double.class, recipeId);
     }
 
     public void createRecipe(String name, Short servingSize, Integer userAuthorId, Integer restaurantAuthorId,
                              String typeOfDish, Short calories, String description, Short timeToCook, String instructionSet) {
-        SimpleJdbcCall jdbcCall = new SimpleJdbcCall(jdbcTemplate)
-                .withProcedureName("newRecipe");
+        String username = null;
+        if (userAuthorId != null) {
+            try {
+                username = jdbcTemplate.queryForObject(
+                    "EXEC getUsernameById @UserID=?", String.class, userAuthorId);
+            } catch (Exception e) {
+                // User not found
+            }
+        }
+        
+        String restName = null;
+        if (restaurantAuthorId != null) {
+            try {
+                restName = jdbcTemplate.queryForObject(
+                    "EXEC getRestaurantNameById @RestID=?", String.class, restaurantAuthorId);
+            } catch (Exception e) {
+                // Restaurant not found
+            }
+        }
 
-        Map<String, Object> inParams = new HashMap<>();
-        inParams.put("Name", name);
-        inParams.put("ServingSize", servingSize);
-        inParams.put("UserAuthorID", userAuthorId);
-        inParams.put("RestaurantAuthorID", restaurantAuthorId);
-        inParams.put("TypeOfDish", typeOfDish);
-        inParams.put("Calories", calories);
-        inParams.put("Description", description);
-        inParams.put("TimeToCook", timeToCook);
-        inParams.put("InstructionSet", instructionSet);
-
-        jdbcCall.execute(inParams);
+        jdbcTemplate.update("EXEC newRecipe @Name=?, @ServingSize=?, @UserAuthor=?, @RestName=?, @TypeOfDish=?, @Calories=?, @Description=?, @TimeToCook=?, @InstructionSet=?",
+            name, servingSize, username, restName, typeOfDish, calories, description, timeToCook, instructionSet);
     }
 
     public void updateRecipe(Integer recipeId, Short servingSize, String typeOfDish, Short calories,
                              String description, Short timeToCook, String instructionSet) {
-        SimpleJdbcCall jdbcCall = new SimpleJdbcCall(jdbcTemplate)
-                .withProcedureName("updateRecipe");
-
-        Map<String, Object> inParams = new HashMap<>();
-        inParams.put("recipeID", recipeId);
-        inParams.put("newServingSize", servingSize);
-        inParams.put("newTypeOfDish", typeOfDish);
-        inParams.put("newCalories", calories);
-        inParams.put("newDescription", description);
-        inParams.put("newTimeToCook", timeToCook);
-        inParams.put("newInstructionSet", instructionSet);
-
-        jdbcCall.execute(inParams);
+        jdbcTemplate.update("EXEC updateRecipe @recipeID=?, @newServingSize=?, @newTypeOfDish=?, @newCalories=?, @newDescription=?, @newTimeToCook=?, @newInstructionSet=?",
+            recipeId, servingSize, typeOfDish, calories, description, timeToCook, instructionSet);
     }
 }

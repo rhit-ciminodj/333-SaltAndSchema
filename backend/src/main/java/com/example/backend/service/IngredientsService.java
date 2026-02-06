@@ -3,13 +3,10 @@ package com.example.backend.service;
 import com.example.backend.entity.Ingredients;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.simple.SimpleJdbcCall;
 import org.springframework.stereotype.Service;
 
 import javax.sql.DataSource;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @Service
 public class IngredientsService {
@@ -22,8 +19,7 @@ public class IngredientsService {
     }
 
     public List<Ingredients> getAllIngredients() {
-        String sql = "SELECT IngredientsID, Name, Description FROM Ingredients";
-        return jdbcTemplate.query(sql, (rs, rowNum) -> {
+        return jdbcTemplate.query("EXEC getAllIngredients", (rs, rowNum) -> {
             Ingredients ingredient = new Ingredients();
             ingredient.setIngredientId(rs.getInt("IngredientsID"));
             ingredient.setName(rs.getString("Name"));
@@ -32,9 +28,13 @@ public class IngredientsService {
         });
     }
 
+    public List<String> getStoresSellingIngredient(Integer ingredientId) {
+        return jdbcTemplate.query("EXEC getStoresByIngredient @IngredientID=?", 
+            (rs, rowNum) -> rs.getString("Name"), ingredientId);
+    }
+
     public Ingredients getIngredientById(Integer ingredientId) {
-        String sql = "SELECT IngredientsID, Name, Description FROM Ingredients WHERE IngredientsID = ?";
-        List<Ingredients> ingredients = jdbcTemplate.query(sql, (rs, rowNum) -> {
+        List<Ingredients> ingredients = jdbcTemplate.query("EXEC getIngredientById @IngredientID=?", (rs, rowNum) -> {
             Ingredients ingredient = new Ingredients();
             ingredient.setIngredientId(rs.getInt("IngredientsID"));
             ingredient.setName(rs.getString("Name"));
@@ -45,36 +45,17 @@ public class IngredientsService {
     }
 
     public void newIngredient(String name, String description) {
-        SimpleJdbcCall jdbcCall = new SimpleJdbcCall(jdbcTemplate)
-                .withProcedureName("newIngredient");
-
-        Map<String, Object> inParams = new HashMap<>();
-        inParams.put("Name", name);
-        inParams.put("Description", description);
-
-        jdbcCall.execute(inParams);
+        String execSql = "EXEC newIngredient @Name=?, @Desciption=?";
+        jdbcTemplate.update(execSql, name, description);
     }
 
     public void addIngredientToRecipe(Integer ingredientId, Integer recipeId, Short quantity) {
-        SimpleJdbcCall jdbcCall = new SimpleJdbcCall(jdbcTemplate)
-                .withProcedureName("addIngredientToRecipe");
-
-        Map<String, Object> inParams = new HashMap<>();
-        inParams.put("IngredientID", ingredientId);
-        inParams.put("RecipeID", recipeId);
-        inParams.put("Quantity", quantity);
-
-        jdbcCall.execute(inParams);
+        String execSql = "EXEC addIngredientToRecipe @IngredientID=?, @RecipeID=?, @Quantity=?";
+        jdbcTemplate.update(execSql, ingredientId, recipeId, quantity);
     }
 
     public void addSubstituteToIngredient(Integer ingredientId, Integer substituteId) {
-        SimpleJdbcCall jdbcCall = new SimpleJdbcCall(jdbcTemplate)
-                .withProcedureName("addSubstituteToIngredient");
-
-        Map<String, Object> inParams = new HashMap<>();
-        inParams.put("IngredientID", ingredientId);
-        inParams.put("SubstituteID", substituteId);
-
-        jdbcCall.execute(inParams);
+        String execSql = "EXEC addSubstituteToIngredient @IngredientID=?, @SubstituteID=?";
+        jdbcTemplate.update(execSql, ingredientId, substituteId);
     }
 }
