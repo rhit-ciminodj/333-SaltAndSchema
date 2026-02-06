@@ -20,8 +20,7 @@ public class GroceryStoreService {
     }
 
     public List<GroceryStores> getAllStores() {
-        String sql = "SELECT StoreID, Name, Address FROM GroceryStores";
-        return jdbcTemplate.query(sql, (rs, rowNum) -> {
+        return jdbcTemplate.query("EXEC getAllGroceryStores", (rs, rowNum) -> {
             GroceryStores store = new GroceryStores();
             store.setGroceryStoreId(rs.getInt("StoreID"));
             store.setName(rs.getString("Name"));
@@ -31,8 +30,7 @@ public class GroceryStoreService {
     }
 
     public GroceryStores getStoreById(Integer storeId) {
-        String sql = "SELECT StoreID, Name, Address FROM GroceryStores WHERE StoreID = ?";
-        List<GroceryStores> stores = jdbcTemplate.query(sql, (rs, rowNum) -> {
+        List<GroceryStores> stores = jdbcTemplate.query("EXEC getGroceryStoreById @StoreID=?", (rs, rowNum) -> {
             GroceryStores store = new GroceryStores();
             store.setGroceryStoreId(rs.getInt("StoreID"));
             store.setName(rs.getString("Name"));

@@ -19,8 +19,7 @@ public class EquipmentService {
     }
 
     public List<Equipment> getAllEquipment() {
-        String sql = "SELECT EquipID, Name, Description FROM Equipment";
-        return jdbcTemplate.query(sql, (rs, rowNum) -> {
+        return jdbcTemplate.query("EXEC getAllEquipment", (rs, rowNum) -> {
             Equipment equipment = new Equipment();
             equipment.setEquipmentId(rs.getInt("EquipID"));
             equipment.setName(rs.getString("Name"));
@@ -30,8 +29,7 @@ public class EquipmentService {
     }
 
     public Equipment getEquipmentById(Integer equipId) {
-        String sql = "SELECT EquipID, Name, Description FROM Equipment WHERE EquipID = ?";
-        List<Equipment> equipmentList = jdbcTemplate.query(sql, (rs, rowNum) -> {
+        List<Equipment> equipmentList = jdbcTemplate.query("EXEC getEquipmentById @EquipID=?", (rs, rowNum) -> {
             Equipment equipment = new Equipment();
             equipment.setEquipmentId(rs.getInt("EquipID"));
             equipment.setName(rs.getString("Name"));

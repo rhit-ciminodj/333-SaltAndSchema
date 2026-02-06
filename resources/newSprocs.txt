@@ -221,3 +221,72 @@ BEGIN
     SELECT AVG(CAST(Stars AS FLOAT)) AS AvgStars FROM HasEaten WHERE RecipeID = @RecipeID
 END
 GO
+
+-- Equipment Sprocs
+CREATE OR ALTER PROCEDURE getAllEquipment
+AS
+BEGIN
+    SELECT EquipID, [Name], [Description] FROM Equipment
+END
+GO
+
+CREATE OR ALTER PROCEDURE getEquipmentById
+(
+    @EquipID int
+)
+AS
+BEGIN
+    IF (@EquipID IS NULL)
+    BEGIN;
+        THROW 51116, 'Null Input', 1
+        RETURN
+    END
+    SELECT EquipID, [Name], [Description] FROM Equipment WHERE EquipID = @EquipID
+END
+GO
+
+-- GroceryStores Sprocs
+CREATE OR ALTER PROCEDURE getAllGroceryStores
+AS
+BEGIN
+    SELECT StoreID, [Name], [Address] FROM GroceryStores
+END
+GO
+
+CREATE OR ALTER PROCEDURE getGroceryStoreById
+(
+    @StoreID int
+)
+AS
+BEGIN
+    IF (@StoreID IS NULL)
+    BEGIN;
+        THROW 51117, 'Null Input', 1
+        RETURN
+    END
+    SELECT StoreID, [Name], [Address] FROM GroceryStores WHERE StoreID = @StoreID
+END
+GO
+
+-- Cuisine Sprocs
+CREATE OR ALTER PROCEDURE getAllCuisines
+AS
+BEGIN
+    SELECT CuisineID, [Name], [Description] FROM Cuisine
+END
+GO
+
+CREATE OR ALTER PROCEDURE getCuisineById
+(
+    @CuisineID int
+)
+AS
+BEGIN
+    IF (@CuisineID IS NULL)
+    BEGIN;
+        THROW 51118, 'Null Input', 1
+        RETURN
+    END
+    SELECT CuisineID, [Name], [Description] FROM Cuisine WHERE CuisineID = @CuisineID
+END
+GO

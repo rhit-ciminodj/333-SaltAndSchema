@@ -19,8 +19,7 @@ public class CuisineService {
     }
 
     public List<Cuisine> getAllCuisines() {
-        String sql = "SELECT CuisineID, Name, Description FROM Cuisine";
-        return jdbcTemplate.query(sql, (rs, rowNum) -> {
+        return jdbcTemplate.query("EXEC getAllCuisines", (rs, rowNum) -> {
             Cuisine cuisine = new Cuisine();
             cuisine.setCuisineId(rs.getInt("CuisineID"));
             cuisine.setName(rs.getString("Name"));
@@ -30,8 +29,7 @@ public class CuisineService {
     }
 
     public Cuisine getCuisineById(Integer cuisineId) {
-        String sql = "SELECT CuisineID, Name, Description FROM Cuisine WHERE CuisineID = ?";
-        List<Cuisine> cuisines = jdbcTemplate.query(sql, (rs, rowNum) -> {
+        List<Cuisine> cuisines = jdbcTemplate.query("EXEC getCuisineById @CuisineID=?", (rs, rowNum) -> {
             Cuisine cuisine = new Cuisine();
             cuisine.setCuisineId(rs.getInt("CuisineID"));
             cuisine.setName(rs.getString("Name"));
