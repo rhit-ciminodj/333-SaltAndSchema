@@ -295,6 +295,20 @@ BEGIN
     SELECT MainRecipeID, SideRecipeID FROM BestPairsWith WHERE MainRecipeID = @MainRecipeID
 END
 GO
+CREATE OR ALTER PROCEDURE getIngredientSubstitutes
+(
+    @IngredientID int
+)
+AS
+BEGIN
+    IF (@IngredientID IS NULL)
+    BEGIN;
+        THROW 51122, 'Null Input', 1
+        RETURN
+    END
+    SELECT IngredientID, SubstituteID FROM Substitutes WHERE IngredientID = @IngredientID
+END
+GO
 CREATE OR ALTER PROCEDURE newBestPairsWith
 (
     @MainRecipeID int,
@@ -308,18 +322,50 @@ BEGIN
         RETURN
     END
 
-    IF EXISTS (SELECT 1 FROM BestPairsWith WHERE MainRecipeID = @MainRecipeID AND SideRecipeID = @SideRecipeID)
-    BEGIN;
-        THROW 51121, 'This Pair already Exists', 1
-        RETURN
-    END
-
     IF (@MainRecipeID = @SideRecipeID)
     BEGIN;
         THROW 51121, 'Main recipe cannot pair to itself', 1
         RETURN
     END
-
+    IF EXISTS (SELECT 1 FROM BestPairsWith WHERE 
+        (MainRecipeID = @MainRecipeID AND SideRecipeID = @SideRecipeID) OR
+        (MainRecipeID = @SideRecipeID AND SideRecipeID = @MainRecipeID))
+    BEGIN;
+        THROW 51122, 'This Pair already Exists', 1
+        RETURN
+    END
     INSERT INTO BestPairsWith (MainRecipeID, SideRecipeID) VALUES (@MainRecipeID, @SideRecipeID)
+    INSERT INTO BestPairsWith (MainRecipeID, SideRecipeID) VALUES (@SideRecipeID, @MainRecipeID)
+END
+GO
+CREATE OR ALTER PROCEDURE newSubstitutes
+(
+    @IngredientID int,
+    @SubstituteID int
+)
+AS
+BEGIN
+    IF (@IngredientID IS NULL OR @SubstituteID IS NULL)
+    BEGIN;
+        THROW 51123, 'Null Input', 1
+        RETURN
+    END
+
+    IF (@IngredientID = @SubstituteID)
+    BEGIN;
+        THROW 51124, 'Cannot be the same', 1
+        RETURN
+    END
+
+    IF EXISTS (SELECT 1 FROM Substitutes WHERE 
+        (IngredientID = @IngredientID AND SubstituteID = @SubstituteID) OR
+        (IngredientID = @SubstituteID AND SubstituteID = @IngredientID))
+    BEGIN;
+        THROW 51125, 'This Pair already exists', 1
+        RETURN
+    END
+
+    INSERT INTO Substitutes (IngredientID, SubstituteID) VALUES (@IngredientID, @SubstituteID)
+    INSERT INTO Substitutes (IngredientID, SubstituteID) VALUES (@SubstituteID, @IngredientID)
 END
 GO

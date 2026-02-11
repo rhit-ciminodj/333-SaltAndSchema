@@ -278,6 +278,22 @@ export const bestPairsWithApi = {
   },
 };
 
+// ============= SUBSTITUTES =============
+
+export const substitutesApi = {
+  // Get all substitutes for an ingredient
+  getByIngredient: async (ingredientId) => {
+    const response = await api.get(`/substitutes/${ingredientId}`);
+    return response.data.map(normalizeSubstitutes);
+  },
+
+  // Add a new substitute
+  create: async (ingredientId, substituteId) => {
+    const response = await api.post(`/substitutes/${ingredientId}/${substituteId}`);
+    return response.data;
+  },
+};
+
 // ============= AUTH HELPERS =============
 
 const AUTH_KEY = 'saltandschema_user';
@@ -376,6 +392,14 @@ function normalizeBestPairsWith(pair) {
   return {
     mainRecipeID: pair.id?.mainRecipeId,
     sideRecipeID: pair.id?.sideRecipeId,
+  };
+}
+
+function normalizeSubstitutes(substitute) {
+  if (!substitute) return null;
+  return {
+    ingredientID: substitute.id?.ingredientId,
+    substituteID: substitute.id?.substituteId,
   };
 }
 
