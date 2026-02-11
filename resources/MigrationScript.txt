@@ -133,6 +133,18 @@ CREATE TABLE UserAuth(
     Salt VARBINARY(32) NOT NULL
 );
 GO
+CREATE TABLE RestaurantOwners(
+    UserID INT REFERENCES Users(UserID) ON DELETE CASCADE,
+    RestaurantID INT REFERENCES Restaurant(RestID) ON DELETE CASCADE,
+    PRIMARY KEY (UserID, RestaurantID)
+);
+GO
+CREATE TABLE GroceryStoreOwners(
+    UserID INT REFERENCES Users(UserID) ON DELETE CASCADE,
+    StoreID INT REFERENCES GroceryStores(StoreID) ON DELETE CASCADE,
+    PRIMARY KEY (UserID, StoreID)
+);
+GO
 ALTER TABLE Restaurant
 ADD CONSTRAINT UQ_Restaurant_Name_Address UNIQUE (Name, Address);
 GO
@@ -1082,6 +1094,158 @@ BEGIN
     INSERT INTO Substitutes (IngredientID, SubstituteID) VALUES (@SubstituteID, @IngredientID)
 END
 GO
+CREATE OR ALTER PROCEDURE getUsernameById
+(
+    @UserID int
+)
+AS
+BEGIN
+    IF (@UserID IS NULL)
+    BEGIN;
+        THROW 51126, 'Null Input', 1
+        RETURN
+    END
+    SELECT Username FROM Users WHERE UserID = @UserID
+END
+GO
+CREATE OR ALTER PROCEDURE getRestaurantNameById
+(
+    @RestID int
+)
+AS
+BEGIN
+    IF (@RestID IS NULL)
+    BEGIN;
+        THROW 51127, 'Null Input', 1
+        RETURN
+    END
+    SELECT [Name] FROM Restaurant WHERE RestID = @RestID
+END
+GO
+CREATE OR ALTER PROCEDURE isRestaurantOwner 
+(
+	@UserID int
+)
+AS
+BEGIN
+	IF(@UserID IS NULL) 
+	BEGIN;
+		THROW 51000, 'Null Input', 1
+		RETURN
+	END
+
+	SELECT CASE WHEN EXISTS(SELECT * FROM RestaurantOwners r WHERE r.UserID = @UserID)
+		THEN 1 ELSE 0 END AS IsOwner
+END
+GO
+CREATE OR ALTER PROCEDURE isGroceryStoreOwner
+(
+	@UserID int
+)
+AS
+BEGIN
+	IF(@UserID IS NULL)
+	BEGIN;
+		THROW 51000, 'Null Input', 1
+		RETURN
+	END
+
+	SELECT CASE WHEN EXISTS(SELECT * FROM GroceryStoreOwners g WHERE g.UserID = @UserID)
+		THEN 1 ELSE 0 END AS IsOwner
+END
+GO
+CREATE OR ALTER PROCEDURE getUserOwnedRestaurant
+(
+	@UserID int
+)
+AS 
+BEGIN
+	IF (@UserID IS NULL)
+	BEGIN;
+		THROW 51000, 'Null Input', 1
+		RETURN
+	END
+
+	SELECT r.RestID, r.[Name], r.Rating, r.[Address]
+	FROM RestaurantOwners ro
+	JOIN Restaurant r ON r.RestID = ro.RestaurantID
+	WHERE ro.UserID = @UserID
+END
+GO
+CREATE OR ALTER PROCEDURE getUserOwnedGroceryStore
+(
+	@UserID int
+)
+AS
+BEGIN
+	IF(@UserID IS NULL)
+	BEGIN;
+		THROW 51000, 'Null Input', 1
+		RETURN
+	END
+
+	SELECT g.StoreID, g.[Name], g.[Address]
+	FROM GroceryStoreOwners gso
+	JOIN GroceryStores g ON g.StoreID = gso.StoreID
+	WHERE gso.UserID = @UserID
+END
+GO
+CREATE OR ALTER PROCEDURE assignRestaurantToOwner
+(
+    @UserID int,
+    @RestaurantID int
+)
+AS
+BEGIN
+    IF (@UserID IS NULL OR @RestaurantID IS NULL)
+    BEGIN;
+        THROW 51144, 'Null Input', 1
+        RETURN
+    END
+
+    IF NOT EXISTS (SELECT * FROM Users WHERE UserID = @UserID)
+    BEGIN;
+        THROW 51145, 'User does not exist', 1
+        RETURN
+    END
+
+    IF NOT EXISTS (SELECT * FROM Restaurant WHERE RestID = @RestaurantID)
+    BEGIN;
+        THROW 51146, 'Restaurant does not exist', 1
+        RETURN
+    END
+
+    INSERT INTO RestaurantOwners (UserID, RestaurantID) VALUES (@UserID, @RestaurantID)
+END
+GO
+CREATE OR ALTER PROCEDURE assignStoreToOwner
+(
+    @UserID int,
+    @StoreID int
+)
+AS
+BEGIN
+    IF (@UserID IS NULL OR @StoreID IS NULL)
+    BEGIN;
+        THROW 51147, 'Null Input', 1
+        RETURN
+    END
+
+    IF NOT EXISTS (SELECT * FROM Users WHERE UserID = @UserID)
+    BEGIN;
+        THROW 51148, 'User does not exist', 1
+        RETURN
+    END
+
+    IF NOT EXISTS (SELECT * FROM GroceryStores WHERE StoreID = @StoreID)
+    BEGIN;
+        THROW 51149, 'Store does not exist', 1
+        RETURN
+    END
+
+    INSERT INTO GroceryStoreOwners (UserID, StoreID) VALUES (@UserID, @StoreID)
+END
+GO
 CREATE OR ALTER VIEW vw_RecipeRatings 
 AS
 SELECT
@@ -1187,6 +1351,66 @@ FROM BestPairsWith b
 JOIN Recipe r1 ON b.MainRecipeID = r1.RecipeID
 JOIN Recipe r2 ON b.SideRecipeID = r2.RecipeID
 GO
+CREATE OR ALTER TRIGGER trg_SingleRestaurantOwnership
+ON RestaurantOwners
+AFTER INSERT
+AS
+BEGIN
+    IF EXISTS (
+        SELECT i.UserID 
+        FROM inserted i
+        WHERE (SELECT COUNT(*) FROM RestaurantOwners ro WHERE ro.UserID = i.UserID) > 1
+    )
+    BEGIN;
+        THROW 51000, 'User can only own one restaurant', 1
+    END
+END
+GO
+CREATE OR ALTER TRIGGER trg_SingleGroceryStoreOwnership
+ON GroceryStoreOwners
+AFTER INSERT
+AS
+BEGIN
+    IF EXISTS (
+        SELECT i.UserID 
+        FROM inserted i
+        WHERE (SELECT COUNT(*) FROM GroceryStoreOwners gso WHERE gso.UserID = i.UserID) > 1
+    )
+    BEGIN;
+		THROW 51002, 'User can only own one grocery store', 1
+    END
+END
+GO
+CREATE OR ALTER TRIGGER trg_PreventDualOwnership_Restaurant
+ON RestaurantOwners
+AFTER INSERT
+AS
+BEGIN
+    IF EXISTS (
+        SELECT i.UserID 
+        FROM inserted i
+        WHERE EXISTS (SELECT 1 FROM GroceryStoreOwners gso WHERE gso.UserID = i.UserID)
+    )
+    BEGIN;
+        THROW 51002, 'User cannot own both a restaurant and grocery store.', 1
+    END
+END
+GO
+CREATE OR ALTER TRIGGER trg_PreventDualOwnership_Store
+ON GroceryStoreOwners
+AFTER INSERT
+AS
+BEGIN
+    IF EXISTS (
+        SELECT i.UserID 
+        FROM inserted i
+        WHERE EXISTS (SELECT 1 FROM RestaurantOwners ro WHERE ro.UserID = i.UserID)
+    )
+    BEGIN;
+        THROW 51002, 'User cannot own both a restaurant and grocery store.', 1
+    END
+END
+GO4
 CREATE USER SaltAndSchemaUser FOR LOGIN SaltAndSchemaUser
 GO
 ALTER ROLE db_datareader ADD MEMBER SaltAndSchemaUser

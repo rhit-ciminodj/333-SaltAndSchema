@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { UtensilsCrossed, MapPin, Filter, Plus } from 'lucide-react';
 import { Card, CardBody, StarRating, SearchInput, Select, Button, Input } from '../components/ui';
-import { restaurantApi } from '../services/api';
+import { restaurantApi, restaurantOwnersApi, authUtils } from '../services/api';
 
 export function RestaurantsPage() {
   const [restaurants, setRestaurants] = useState([]);
@@ -14,10 +14,34 @@ export function RestaurantsPage() {
   const [newRestaurant, setNewRestaurant] = useState({ name: '', rating: 0, address: '' });
   const [createLoading, setCreateLoading] = useState(false);
   const [createError, setCreateError] = useState('');
+  const [isRestaurantOwner, setIsRestaurantOwner] = useState(false);
+  const [hasOwnedRestaurant, setHasOwnedRestaurant] = useState(false);
+
+  const user = authUtils.getUser();
 
   useEffect(() => {
     loadRestaurants();
+    checkOwnerStatus();
   }, []);
+
+  const checkOwnerStatus = async () => {
+    if (!user) return;
+    try {
+      const isOwner = await restaurantOwnersApi.isOwner(user.userID);
+      setIsRestaurantOwner(isOwner);
+      if (isOwner) {
+        // Check if they already own a restaurant
+        try {
+          const owned = await restaurantOwnersApi.getOwnedRestaurant(user.userID);
+          setHasOwnedRestaurant(owned && owned.length > 0);
+        } catch {
+          setHasOwnedRestaurant(false);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to check owner status:', err);
+    }
+  };
 
   const loadRestaurants = async () => {
     try {
@@ -68,10 +92,24 @@ export function RestaurantsPage() {
     setCreateLoading(true);
     setCreateError('');
     try {
+      // Create the restaurant
       await restaurantApi.create(newRestaurant);
+      
+      // Reload restaurants to get the new one's ID
+      const updatedRestaurants = await restaurantApi.getAll();
+      setRestaurants(updatedRestaurants);
+      
+      // Find the newly created restaurant and assign it to the owner
+      const newRest = updatedRestaurants.find(
+        r => r.name === newRestaurant.name && r.address === newRestaurant.address
+      );
+      if (newRest && user) {
+        await restaurantOwnersApi.assignRestaurant(user.userID, newRest.restID);
+        setHasOwnedRestaurant(true);
+      }
+      
       setShowCreateForm(false);
       setNewRestaurant({ name: '', rating: 0, address: '' });
-      loadRestaurants();
     } catch (err) {
       setCreateError(err.response?.data || 'Failed to create restaurant');
     } finally {
@@ -106,10 +144,12 @@ export function RestaurantsPage() {
           <h1 className="text-4xl font-bold text-white mb-2">Restaurants</h1>
           <p className="text-zinc-400">Discover {restaurants.length} amazing restaurants</p>
         </div>
-        <Button onClick={() => setShowCreateForm(!showCreateForm)}>
-          <Plus className="w-4 h-4" />
-          Add Restaurant
-        </Button>
+        {isRestaurantOwner && !hasOwnedRestaurant && (
+          <Button onClick={() => setShowCreateForm(!showCreateForm)}>
+            <Plus className="w-4 h-4" />
+            Add Restaurant
+          </Button>
+        )}
       </div>
 
       {/* Create Form */}

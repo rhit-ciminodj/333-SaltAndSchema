@@ -157,27 +157,29 @@ export function RecipesPage() {
       {showCreateForm && (
         <Card className="mb-8" hover={false}>
           <CardBody>
-            <h3 className="text-lg font-semibold text-white mb-4">Create New Recipe</h3>
-            <form onSubmit={handleCreateRecipe} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input
-                label="Name"
-                value={newRecipe.name}
-                onChange={(e) => setNewRecipe({ ...newRecipe, name: e.target.value })}
-                required
-                maxLength={20}
-              />
-              <Input
-                label="Type of Dish"
-                value={newRecipe.typeOfDish}
-                onChange={(e) => setNewRecipe({ ...newRecipe, typeOfDish: e.target.value })}
-                placeholder="Main, Appetizer, Dessert..."
-              />
-              <Input
-                label="Serving Size"
-                type="number"
-                value={newRecipe.servingSize}
-                onChange={(e) => setNewRecipe({ ...newRecipe, servingSize: parseInt(e.target.value) })}
-              />
+            {authUtils.getUser() ? (
+              <>
+                <h3 className="text-lg font-semibold text-white mb-4">Create New Recipe</h3>
+                <form onSubmit={handleCreateRecipe} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Input
+                    label="Name"
+                    value={newRecipe.name}
+                    onChange={(e) => setNewRecipe({ ...newRecipe, name: e.target.value })}
+                    required
+                    maxLength={20}
+                  />
+                  <Input
+                    label="Type of Dish"
+                    value={newRecipe.typeOfDish}
+                    onChange={(e) => setNewRecipe({ ...newRecipe, typeOfDish: e.target.value })}
+                    placeholder="Main, Appetizer, Dessert..."
+                  />
+                  <Input
+                    label="Serving Size"
+                    type="number"
+                    value={newRecipe.servingSize}
+                    onChange={(e) => setNewRecipe({ ...newRecipe, servingSize: parseInt(e.target.value) })}
+                  />
               <Input
                 label="Calories"
                 type="number"
@@ -218,6 +220,15 @@ export function RecipesPage() {
                 </Button>
               </div>
             </form>
+              </>
+            ) : (
+              <div className="text-center py-4">
+                <p className="text-zinc-400 mb-3">Log in to create a recipe</p>
+                <Link to="/login">
+                  <Button variant="primary">Log In</Button>
+                </Link>
+              </div>
+            )}
           </CardBody>
         </Card>
       )}

@@ -294,6 +294,28 @@ export const substitutesApi = {
   },
 };
 
+// ============= RESTAURANT OWNERS =============
+
+export const restaurantOwnersApi = {
+  // Check if user is a restaurant owner
+  isOwner: async (userId) => {
+    const response = await api.get(`/restaurantowners/isowner/${userId}`);
+    return response.data;
+  },
+
+  // Get user's owned restaurant
+  getOwnedRestaurant: async (userId) => {
+    const response = await api.get(`/restaurantowners/${userId}`);
+    return response.data;
+  },
+
+  // Assign restaurant to owner
+  assignRestaurant: async (userId, restaurantId) => {
+    const response = await api.post(`/restaurantowners/assign/${userId}/${restaurantId}`);
+    return response.data;
+  },
+};
+
 // ============= AUTH HELPERS =============
 
 const AUTH_KEY = 'saltandschema_user';

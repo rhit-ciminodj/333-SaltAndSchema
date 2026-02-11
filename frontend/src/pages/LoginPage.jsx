@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardBody, CardHeader, Button, Input } from '../components/ui';
-import { userApi, authUtils } from '../services/api';
+import { userApi, authUtils, restaurantApi, restaurantOwnersApi } from '../services/api';
 
 export function LoginPage() {
   const navigate = useNavigate();
   const [form, setForm] = useState({ username: '', address: '', password: '' });
   const [isRegistering, setIsRegistering] = useState(false);
+  const [accountType, setAccountType] = useState('regular');
+  const [restaurantForm, setRestaurantForm] = useState({ name: '', address: '', rating: 3 });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -26,10 +28,35 @@ export function LoginPage() {
 
     try {
       if (isRegistering) {
+        // Register the user
         await userApi.register(form.username, form.address, form.password);
-        setSuccess('Account created! You can now sign in.');
-        setIsRegistering(false);
-        setForm({ username: form.username, address: '', password: '' });
+        
+        if (accountType === 'restaurantOwner') {
+          // Auto-login to get user data
+          const user = await userApi.login(form.username, form.password);
+          
+          // Create the restaurant
+          await restaurantApi.create(restaurantForm);
+          
+          // Get the newly created restaurant
+          const allRestaurants = await restaurantApi.getAll();
+          const newRestaurant = allRestaurants.find(
+            r => r.name === restaurantForm.name && r.address === restaurantForm.address
+          );
+          
+          if (newRestaurant) {
+            // Assign restaurant to owner
+            await restaurantOwnersApi.assignRestaurant(user.userID, newRestaurant.restID);
+          }
+          
+          authUtils.saveUser(user);
+          setSuccess('Restaurant owner account created! Redirecting...');
+          setTimeout(() => navigate('/restaurants'), 1000);
+        } else {
+          setSuccess('Account created! You can now sign in.');
+          setIsRegistering(false);
+          setForm({ username: form.username, address: '', password: '' });
+        }
       } else {
         const user = await userApi.login(form.username, form.password);
         authUtils.saveUser(user);
@@ -113,6 +140,67 @@ export function LoginPage() {
                     required
                   />
                 )}
+                
+                {isRegistering && (
+                  <div className="space-y-3">
+                    <label className="block text-sm font-medium text-zinc-300">Account Type</label>
+                    <div className="flex gap-4">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="accountType"
+                          value="regular"
+                          checked={accountType === 'regular'}
+                          onChange={(e) => setAccountType(e.target.value)}
+                          className="w-4 h-4 text-amber-500"
+                        />
+                        <span className="text-sm text-zinc-300">Regular User</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="accountType"
+                          value="restaurantOwner"
+                          checked={accountType === 'restaurantOwner'}
+                          onChange={(e) => setAccountType(e.target.value)}
+                          className="w-4 h-4 text-amber-500"
+                        />
+                        <span className="text-sm text-zinc-300">Restaurant Owner</span>
+                      </label>
+                    </div>
+                  </div>
+                )}
+
+                {isRegistering && accountType === 'restaurantOwner' && (
+                  <div className="space-y-4 p-4 border border-amber-500/30 rounded-lg bg-amber-500/5">
+                    <h3 className="text-sm font-medium text-amber-300">Restaurant Details</h3>
+                    <Input
+                      label="Restaurant Name"
+                      value={restaurantForm.name}
+                      onChange={(e) => setRestaurantForm({ ...restaurantForm, name: e.target.value })}
+                      placeholder="e.g. George's Bistro"
+                      required
+                      maxLength={20}
+                    />
+                    <Input
+                      label="Restaurant Address"
+                      value={restaurantForm.address}
+                      onChange={(e) => setRestaurantForm({ ...restaurantForm, address: e.target.value })}
+                      placeholder="456 Main St"
+                      required
+                      maxLength={50}
+                    />
+                    <Input
+                      label="Initial Rating (1-5)"
+                      type="number"
+                      step="0.1"
+                      min="1"
+                      max="5"
+                      value={restaurantForm.rating}
+                      onChange={(e) => setRestaurantForm({ ...restaurantForm, rating: parseFloat(e.target.value) })}
+                    />
+                  </div>
+                )}
                 <Input
                   label="Password"
                   name="password"
@@ -138,10 +226,10 @@ export function LoginPage() {
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading
                     ? isRegistering
-                      ? 'Creating account...'
+                      ? accountType === 'restaurantOwner' ? 'Creating restaurant account...' : 'Creating account...'
                       : 'Signing in...'
                     : isRegistering
-                      ? 'Create Account'
+                      ? accountType === 'restaurantOwner' ? 'Create Restaurant Account' : 'Create Account'
                       : 'Sign In'}
                 </Button>
                 <button
@@ -149,6 +237,8 @@ export function LoginPage() {
                   className="w-full text-sm text-zinc-400 hover:text-white"
                   onClick={() => {
                     setIsRegistering((prev) => !prev);
+                    setAccountType('regular');
+                    setRestaurantForm({ name: '', address: '', rating: 3 });
                     setError('');
                     setSuccess('');
                   }}
