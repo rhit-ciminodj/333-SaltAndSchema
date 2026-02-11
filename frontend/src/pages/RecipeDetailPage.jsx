@@ -9,10 +9,12 @@ import {
   Share2,
   BookOpen,
   Edit2,
-  Star
+  Star,
+  Plus,
+  Utensils
 } from 'lucide-react';
 import { Card, CardBody, CardHeader, Badge, Button, Input } from '../components/ui';
-import { recipeApi, hasEatenApi, authUtils } from '../services/api';
+import { recipeApi, hasEatenApi, authUtils, bestPairsWithApi } from '../services/api';
 import { useState, useEffect } from 'react';
 
 export function RecipeDetailPage() {
@@ -28,6 +30,11 @@ export function RecipeDetailPage() {
   const [editForm, setEditForm] = useState({});
   const [editLoading, setEditLoading] = useState(false);
   const [editError, setEditError] = useState('');
+  const [bestPairs, setBestPairs] = useState([]);
+  const [allRecipes, setAllRecipes] = useState([]);
+  const [selectedSideRecipe, setSelectedSideRecipe] = useState('');
+  const [addPairLoading, setAddPairLoading] = useState(false);
+  const [addPairMessage, setAddPairMessage] = useState('');
   
   const user = authUtils.getUser();
 
@@ -62,12 +69,59 @@ export function RecipeDetailPage() {
         }
       }
       
+      // Load best pairs with for this recipe
+      await loadBestPairs();
+      
+      // Load all recipes for the add-pair dropdown
+      const recipes = await recipeApi.getAll();
+      setAllRecipes(recipes.filter(r => r.recipeID !== parseInt(id)));
+      
       setError('');
     } catch (err) {
       setError('Recipe not found');
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadBestPairs = async () => {
+    try {
+      const pairs = await bestPairsWithApi.getByMainRecipe(parseInt(id));
+      // Fetch the actual recipe details for each side recipe
+      const pairsWithDetails = await Promise.all(
+        pairs.map(async (pair) => {
+          try {
+            const sideRecipe = await recipeApi.getById(pair.sideRecipeID);
+            return { ...pair, sideRecipe };
+          } catch {
+            return { ...pair, sideRecipe: null };
+          }
+        })
+      );
+      setBestPairs(pairsWithDetails);
+    } catch (err) {
+      console.error('Failed to load best pairs:', err);
+      setBestPairs([]);
+    }
+  };
+
+  const handleAddBestPair = async () => {
+    if (!selectedSideRecipe) {
+      setAddPairMessage('Please select a recipe');
+      return;
+    }
+    setAddPairLoading(true);
+    setAddPairMessage('');
+    try {
+      await bestPairsWithApi.create(parseInt(id), parseInt(selectedSideRecipe));
+      setAddPairMessage('Pairing added successfully!');
+      setSelectedSideRecipe('');
+      await loadBestPairs();
+    } catch (err) {
+      setAddPairMessage(err.response?.data || 'Failed to add pairing');
+    } finally {
+      setAddPairLoading(false);
     }
   };
 
@@ -237,6 +291,74 @@ export function RecipeDetailPage() {
                   ))
                 ) : (
                   <p className="text-zinc-500">No instructions available.</p>
+                )}
+              </div>
+            </CardBody>
+          </Card>
+
+          {/* Best Pairs With */}
+          <Card hover={false}>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Utensils className="w-5 h-5 text-amber-400" />
+                <h2 className="text-xl font-semibold text-white">Best Paired With</h2>
+              </div>
+            </CardHeader>
+            <CardBody>
+              {bestPairs.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                  {bestPairs.map((pair, index) => (
+                    <Link
+                      key={index}
+                      to={`/recipes/${pair.sideRecipeID}`}
+                      className="block p-4 bg-zinc-800 rounded-lg hover:bg-zinc-700 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <ChefHat className="w-8 h-8 text-amber-400" />
+                        <div>
+                          <p className="text-white font-medium">
+                            {pair.sideRecipe?.name || `Recipe #${pair.sideRecipeID}`}
+                          </p>
+                          {pair.sideRecipe?.typeOfDish && (
+                            <Badge variant="info" className="mt-1">{pair.sideRecipe.typeOfDish}</Badge>
+                          )}
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-zinc-500 mb-6">No pairings added yet.</p>
+              )}
+              
+              {/* Add New Pairing */}
+              <div className="border-t border-zinc-700 pt-4">
+                <h3 className="text-sm font-medium text-zinc-400 mb-3">Add a New Pairing</h3>
+                <div className="flex gap-3">
+                  <select
+                    value={selectedSideRecipe}
+                    onChange={(e) => setSelectedSideRecipe(e.target.value)}
+                    className="flex-1 px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  >
+                    <option value="">Select a recipe...</option>
+                    {allRecipes.map((r) => (
+                      <option key={r.recipeID} value={r.recipeID}>
+                        {r.name}
+                      </option>
+                    ))}
+                  </select>
+                  <Button
+                    onClick={handleAddBestPair}
+                    disabled={addPairLoading || !selectedSideRecipe}
+                  >
+                    <Plus className="w-4 h-4" />
+                    {addPairLoading ? 'Adding...' : 'Add'}
+                  </Button>
+                </div>
+                {addPairMessage && (
+                  <p className={`mt-2 text-sm ${addPairMessage.includes('success') ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {addPairMessage}
+                  </p>
                 )}
               </div>
             </CardBody>

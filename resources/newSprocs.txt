@@ -221,15 +221,12 @@ BEGIN
     SELECT AVG(CAST(Stars AS FLOAT)) AS AvgStars FROM HasEaten WHERE RecipeID = @RecipeID
 END
 GO
-
--- Equipment Sprocs
 CREATE OR ALTER PROCEDURE getAllEquipment
 AS
 BEGIN
     SELECT EquipID, [Name], [Description] FROM Equipment
 END
 GO
-
 CREATE OR ALTER PROCEDURE getEquipmentById
 (
     @EquipID int
@@ -244,15 +241,12 @@ BEGIN
     SELECT EquipID, [Name], [Description] FROM Equipment WHERE EquipID = @EquipID
 END
 GO
-
--- GroceryStores Sprocs
 CREATE OR ALTER PROCEDURE getAllGroceryStores
 AS
 BEGIN
     SELECT StoreID, [Name], [Address] FROM GroceryStores
 END
 GO
-
 CREATE OR ALTER PROCEDURE getGroceryStoreById
 (
     @StoreID int
@@ -267,15 +261,12 @@ BEGIN
     SELECT StoreID, [Name], [Address] FROM GroceryStores WHERE StoreID = @StoreID
 END
 GO
-
--- Cuisine Sprocs
 CREATE OR ALTER PROCEDURE getAllCuisines
 AS
 BEGIN
     SELECT CuisineID, [Name], [Description] FROM Cuisine
 END
 GO
-
 CREATE OR ALTER PROCEDURE getCuisineById
 (
     @CuisineID int
@@ -288,5 +279,47 @@ BEGIN
         RETURN
     END
     SELECT CuisineID, [Name], [Description] FROM Cuisine WHERE CuisineID = @CuisineID
+END
+GO
+CREATE OR ALTER PROCEDURE getBestPairsWith
+(
+    @MainRecipeID int
+)
+AS
+BEGIN
+    IF (@MainRecipeID IS NULL)
+    BEGIN;
+        THROW 51119, 'Null Input', 1
+        RETURN
+    END
+    SELECT MainRecipeID, SideRecipeID FROM BestPairsWith WHERE MainRecipeID = @MainRecipeID
+END
+GO
+CREATE OR ALTER PROCEDURE newBestPairsWith
+(
+    @MainRecipeID int,
+    @SideRecipeID int
+)
+AS
+BEGIN
+    IF (@MainRecipeID IS NULL OR @SideRecipeID IS NULL)
+    BEGIN;
+        THROW 51120, 'Null Input', 1
+        RETURN
+    END
+
+    IF EXISTS (SELECT 1 FROM BestPairsWith WHERE MainRecipeID = @MainRecipeID AND SideRecipeID = @SideRecipeID)
+    BEGIN;
+        THROW 51121, 'This Pair already Exists', 1
+        RETURN
+    END
+
+    IF (@MainRecipeID = @SideRecipeID)
+    BEGIN;
+        THROW 51121, 'Main recipe cannot pair to itself', 1
+        RETURN
+    END
+
+    INSERT INTO BestPairsWith (MainRecipeID, SideRecipeID) VALUES (@MainRecipeID, @SideRecipeID)
 END
 GO

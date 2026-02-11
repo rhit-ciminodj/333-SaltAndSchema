@@ -262,6 +262,22 @@ export const hasEatenApi = {
   },
 };
 
+// ============= BEST PAIRS WITH =============
+
+export const bestPairsWithApi = {
+  // Get all best pairs for a main recipe
+  getByMainRecipe: async (mainRecipeId) => {
+    const response = await api.get(`/best-pairs-with/${mainRecipeId}`);
+    return response.data.map(normalizeBestPairsWith);
+  },
+
+  // Add a new best pairs with combo
+  create: async (mainRecipeId, sideRecipeId) => {
+    const response = await api.post(`/best-pairs-with/${mainRecipeId}/${sideRecipeId}`);
+    return response.data;
+  },
+};
+
 // ============= AUTH HELPERS =============
 
 const AUTH_KEY = 'saltandschema_user';
@@ -352,6 +368,14 @@ function normalizeHasEaten(hasEaten) {
     recipeID: hasEaten.id?.recipeId,
     favorites: hasEaten.favorites,
     stars: hasEaten.stars,
+  };
+}
+
+function normalizeBestPairsWith(pair) {
+  if (!pair) return null;
+  return {
+    mainRecipeID: pair.id?.mainRecipeId,
+    sideRecipeID: pair.id?.sideRecipeId,
   };
 }
 

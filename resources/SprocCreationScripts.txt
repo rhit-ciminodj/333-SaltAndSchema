@@ -101,14 +101,7 @@ BEGIN
 	INSERT INTO GroceryStores ([Name], [Address]) VALUES (@Name, @Address)
 END
 GO
-USE [SaltAndSchema]
-GO
-/****** Object:  StoredProcedure [dbo].[newRecipe]    Script Date: 2/5/2026 7:28:48 PM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-ALTER   PROCEDURE [dbo].[newRecipe]
+CREATE OR ALTER PROCEDURE newRecipe
 (
 	@Name nvarchar(20),
 	@ServingSize smallint = 0,
