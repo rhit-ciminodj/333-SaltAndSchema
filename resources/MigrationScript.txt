@@ -1,0 +1,1196 @@
+CREATE DATABASE [SaltAndSchema2]
+ON
+PRIMARY ( 
+NAME=[Data], 
+FILENAME='/var/opt/mssql/data/saltAndSchemaData2.mdf', 
+SIZE=70MB,
+MAXSIZE=300MB,
+FILEGROWTH=10%
+) 
+LOG ON 
+( 
+NAME=[Log], 
+FILENAME= '/var/opt/mssql/data/saltAndSchemaLog2.ldf',
+SIZE=30MB,
+MAXSIZE=100MB,
+FILEGROWTH=10%
+)
+COLLATE SQL_Latin1_General_Cp1_CI_AS
+GO
+USE SaltAndSchema2
+GO
+CREATE TABLE Users(
+	UserID INT identity(1, 1) PRIMARY KEY,
+	Username nvarchar(20) UNIQUE NOT NULL,
+	Address nvarchar(50) NOT NULL
+);
+GO
+CREATE TABLE Restaurant(
+	RestID INT identity(1, 1) PRIMARY KEY,
+	Name nvarchar(20) NOT NULL,
+	Rating DECIMAL(3, 2),
+	Address nvarchar(50) NOT NULL,
+	CHECK (Rating >= 1 AND Rating <= 5)
+);
+-- Rating will need to be put in a separate view, cannot be stored just on table
+GO
+CREATE TABLE Recipe(
+	RecipeID INT identity(1, 1) PRIMARY KEY,
+	Name nvarchar(20) NOT NULL,
+	ServingSize SMALLINT,
+	UserAuthorID INT NULL,
+	RestaurantAuthorId INT NULL,
+	TypeOfDish nvarchar(10),
+	Calories SMALLINT,
+	Description nvarchar(200),
+	TimeToCook SMALLINT,
+	InstructionSet nvarchar(500)
+);
+GO 
+CREATE TABLE Cuisine(
+	CuisineID INT identity(1, 1) PRIMARY KEY,
+	Name nvarchar(20) NOT NULL,
+	Description nvarchar(200)
+);
+GO
+CREATE TABLE Ingredients(
+	IngredientsID INT identity(1, 1) PRIMARY KEY,
+	Name nvarchar(20) NOT NULL,
+	Description nvarchar(200)
+);
+GO
+CREATE TABLE Equipment(
+	EquipID INT identity(1, 1) PRIMARY KEY,
+	Name nvarchar(20) NOT NULL,
+	Description nvarchar(200)
+);
+GO
+CREATE TABLE GroceryStores(
+	StoreID INT identity(1, 1) PRIMARY KEY,
+	Name nvarchar(20) NOT NULL,
+	Address nvarchar(50) NOT NULL
+);
+GO
+CREATE TABLE HasEaten(
+	UserID INT REFERENCES Users(UserID),
+	RecipeID INT REFERENCES Recipe(RecipeID) ON DELETE CASCADE,
+	Favorites BIT NOT NULL,
+	Stars INT,
+	CHECK(Stars IS NULL OR Stars BETWEEN 1 AND 5),
+	PRIMARY KEY (UserID, RecipeID)
+);
+GO
+CREATE TABLE Cooks(
+	RestaurantID INT REFERENCES Restaurant(RestID) ON DELETE CASCADE,
+	RecipeID INT REFERENCES Recipe(RecipeID) ON DELETE CASCADE,
+	CostOfItem MONEY,
+	PRIMARY KEY (RestaurantID, RecipeID)
+);
+GO
+CREATE TABLE BestPairsWith(
+	MainRecipeID INT REFERENCES Recipe(RecipeID) ON DELETE CASCADE,
+	SideRecipeID INT REFERENCES Recipe(RecipeID) ON DELETE NO ACTION,
+	CHECK(MainRecipeID <> SideRecipeID),
+	PRIMARY KEY (MainRecipeID, SideRecipeID)
+);
+GO
+CREATE TABLE TypeOf(
+	CuisineID INT REFERENCES Cuisine(CuisineID) ON DELETE CASCADE,
+	RecipeID INT REFERENCES Recipe(RecipeID) ON DELETE CASCADE,
+	PRIMARY KEY (CuisineID, RecipeID)
+);
+GO
+CREATE TABLE UsingIngredients(
+	IngredientID INT REFERENCES Ingredients(IngredientsID) ON DELETE CASCADE,
+	RecipeID INT REFERENCES Recipe(RecipeID) ON DELETE CASCADE,
+	Quantity SMALLINT NOT NULL,
+	PRIMARY KEY (IngredientID, RecipeID)
+);
+GO
+CREATE TABLE UsingEquip(
+	RecipeID INT REFERENCES Recipe(RecipeID) ON DELETE CASCADE,
+	EquipmentID INT REFERENCES Equipment(EquipID) ON DELETE CASCADE,
+	PRIMARY KEY (RecipeID, EquipmentID)
+);
+GO
+CREATE TABLE SoldBy(
+	IngredientID INT REFERENCES Ingredients(IngredientsID) ON DELETE CASCADE,
+	StoreID INT REFERENCES GroceryStores(StoreID) ON DELETE CASCADE,
+	Price MONEY NOT NULL,
+	PRIMARY KEY (IngredientID, StoreID)
+);
+GO
+CREATE TABLE Substitutes(
+	IngredientID INT REFERENCES Ingredients(IngredientsID) ON DELETE CASCADE,
+	SubstituteID INT REFERENCES Ingredients(IngredientsID) ON DELETE NO ACTION,
+	CHECK(IngredientID <> SubstituteID),
+	PRIMARY KEY (IngredientID, SubstituteID)
+);
+GO
+CREATE TABLE UserAuth(
+    UserID INT PRIMARY KEY REFERENCES Users(UserID) ON DELETE CASCADE,
+    PasswordHash VARBINARY(64) NOT NULL,
+    Salt VARBINARY(32) NOT NULL
+);
+GO
+ALTER TABLE Restaurant
+ADD CONSTRAINT UQ_Restaurant_Name_Address UNIQUE (Name, Address);
+GO
+ALTER TABLE Equipment
+ADD CONSTRAINT UQ_Equipment_Name UNIQUE (Name);
+GO
+ALTER TABLE Cuisine
+ADD CONSTRAINT UQ_Cuisine_Name UNIQUE (Name);
+GO
+ALTER TABLE GroceryStores
+ADD CONSTRAINT UQ_GroceryStore_Name_Address UNIQUE (Name, Address);
+GO
+ALTER TABLE Ingredients
+ADD CONSTRAINT UQ_Ingredient_Name UNIQUE (Name);
+GO
+ALTER TABLE Recipe
+ADD CONSTRAINT CK_Recipe_ExactlyOneAuthor
+CHECK (
+    (UserAuthorID IS NOT NULL AND RestaurantAuthorID IS NULL)
+ OR (UserAuthorID IS NULL AND RestaurantAuthorID IS NOT NULL)
+)
+GO
+ALTER TABLE Recipe 
+ADD CONSTRAINT fk_RecipeUserAuthor
+FOREIGN KEY  (UserAuthorID)
+REFERENCES Users(UserID)
+ON DELETE CASCADE
+GO
+ALTER TABLE Recipe 
+ADD CONSTRAINT fk_RecipeRestaurantAuthor
+FOREIGN KEY  (RestaurantAuthorID)
+REFERENCES Restaurant(RestID)
+ON DELETE NO ACTION
+GO
+CREATE OR ALTER PROCEDURE newUser 
+(
+	@Username nvarchar(20),
+	@Address nvarchar(50)
+)
+AS
+BEGIN
+	IF (@Username IS NULL OR @Address IS NULL)
+	BEGIN;
+		THROW 51001, 'Null Input', 1
+		RETURN
+	END
+	IF EXISTS (SELECT 1 FROM Users u WHERE u.Username = @Username)
+	BEGIN;
+		THROW 51002, 'User Already Exists', 1
+		RETURN
+	END
+	INSERT INTO Users (Username, [Address]) VALUES (@Username, @Address)
+END
+GO
+CREATE OR ALTER PROCEDURE newRestaurant
+(
+    @Name nvarchar(20),
+    @Rating decimal(3,2) = 1,
+    @Address nvarchar(50)
+)
+AS
+BEGIN
+    IF (@Name IS NULL OR @Address IS NULL)
+    BEGIN;
+        THROW 51003, 'Null Input', 1
+        RETURN
+    END
+    IF EXISTS (SELECT 1 FROM Restaurant r WHERE r.Name = @Name AND r.Address = @Address)
+    BEGIN;
+        THROW 51004, 'Restaurant already exists', 1
+        RETURN
+    END
+    INSERT INTO Restaurant ([Name], Rating, [Address]) VALUES (@Name, @Rating, @Address)
+END
+GO
+CREATE OR ALTER PROCEDURE newEquipment
+(
+	@Name nvarchar(20),
+	@Description nvarchar(200)
+)
+AS
+BEGIN
+	IF @Name IS NULL
+	BEGIN;
+		THROW 51005, 'Null Input', 1
+		RETURN
+	END
+	IF EXISTS (SELECT 1 FROM Equipment u WHERE u.Name = @Name)
+	BEGIN;
+		THROW 51006, 'Equipment already exists', 1
+		RETURN
+	END
+	INSERT INTO Equipment ([Name], [Description]) VALUES (@Name, @Description)
+END
+GO
+CREATE OR ALTER PROCEDURE newCuisine
+(
+	@Name nvarchar(20),
+	@Description nvarchar(200)
+)
+AS
+BEGIN
+	IF @Name IS NULL
+	BEGIN;
+		THROW 51007, 'Null Input', 1
+		RETURN
+	END
+	IF EXISTS (SELECT 1 FROM Cuisine c WHERE c.Name = @Name)
+	BEGIN;
+		THROW 51008, 'Cuisine already exists', 1
+		RETURN
+	END
+	INSERT INTO Cuisine ([Name], [Description]) VALUES (@Name, @Description)
+END
+GO
+CREATE OR ALTER PROCEDURE newGroceryStore
+(
+	@Name nvarchar(20),
+	@Address nvarchar(50)
+)
+AS
+BEGIN
+	IF (@Name IS NULL OR @Address IS NULL)
+	BEGIN;
+		THROW 51009, 'Null Input', 1
+		RETURN
+	END
+	IF EXISTS (SELECT 1 FROM GroceryStores g WHERE g.Address = @Address AND g.Name = @Name)
+	BEGIN;
+		THROW 51010, 'Grocery Store already exists', 1
+		RETURN
+	END
+	INSERT INTO GroceryStores ([Name], [Address]) VALUES (@Name, @Address)
+END
+GO
+CREATE OR ALTER PROCEDURE newRecipe
+(
+	@Name nvarchar(20),
+	@ServingSize smallint = 0,
+	@UserAuthor nvarchar(20) = null,
+	@RestName nvarchar(20) = null,
+	@TypeOfDish nvarchar(10) = 'Not Set',
+	@Calories smallint = 0,
+	@Description nvarchar(200) = 'Not Set',
+	@TimeToCook smallint = 0,
+	@InstructionSet nvarchar(500) = 'Not Described'
+)
+AS
+BEGIN
+	DECLARE @UserAuthorID int
+	DECLARE @RestAuthorID int
+	SET @UserAuthorID = null
+	SET @RestAuthorID = null
+	IF (@Name IS NULL)
+	BEGIN;
+		THROW 51011, 'Null Input', 1
+		RETURN
+	END
+	IF (@UserAuthor IS NOT NULL AND @RestName IS NOT NULL)
+	BEGIN;
+		THROW 51000, 'Cannot be both User and RestID not null', 1
+	END
+	IF (@UserAuthor IS NOT NULL)
+	BEGIN
+		SELECT @UserAuthorID = UserID FROM Users WHERE Username = @UserAuthor
+	END
+	IF (@RestName IS NOT NULL)
+	BEGIN
+		SELECT @RestAuthorID = RestID FROM Restaurant WHERE Name = @RestName
+	END
+	INSERT INTO Recipe ([Name], ServingSize, UserAuthorID, RestaurantAuthorId, TypeOfDish, Calories, [Description], TimeToCook, InstructionSet) 
+	VALUES (@Name, @ServingSize, @UserAuthorID, @RestAuthorID, @TypeOfDish, @Calories, @Description, @TimeToCook, @InstructionSet)
+END
+GO
+CREATE OR ALTER PROCEDURE newPair
+(
+	@MainID int,
+	@SideID int
+)
+AS
+BEGIN
+	IF(@MainID IS NULL OR @SideID IS NULL)
+	BEGIN;
+		THROW 51013, 'Null Input', 1
+		RETURN
+	END
+	IF NOT EXISTS (SELECT 1 FROM Recipe r WHERE r.RecipeID = @MainID) OR NOT EXISTS (SELECT 1 FROM Recipe r WHERE r.RecipeID = @SideID)
+	BEGIN;
+		THROW 51014, 'One or more dishes do not exist', 1
+		RETURN
+	END
+	INSERT INTO BestPairsWith (MainRecipeID, SideRecipeID) VALUES (@MainID, @SideID)
+END
+GO
+CREATE OR ALTER PROCEDURE linkRecipeToRestaurant
+(
+	@RestID int,
+	@RecipeID int,
+	@Cost money = 0.00
+)
+AS
+BEGIN
+	IF (@RecipeID IS NULL OR @RestID IS NULL)
+	BEGIN;
+		THROW 51015, 'Null Input', 1
+		RETURN
+	END
+	IF NOT EXISTS (SELECT 1 FROM Restaurant r WHERE r.RestID = @RestID) OR NOT EXISTS (SELECT 1 FROM Recipe re WHERE re.RecipeID = @RecipeID)
+	BEGIN;
+		THROW 51016, '1 or more inputs do not exist', 1
+		RETURN
+	END
+	INSERT INTO Cooks (RestaurantID, RecipeID, CostOfItem) VALUES (@RestID, @RecipeID, @Cost)
+END
+GO
+CREATE OR ALTER PROCEDURE userHasEaten
+(
+	@UserID int,
+	@RecipeID int,
+	@Favorites bit = 0,
+	@Stars int = null
+)
+AS
+BEGIN
+	IF (@UserID IS NULL OR @RecipeID IS NULL)
+	BEGIN;
+		THROW 51017, 'Null Input', 1
+		RETURN
+	END
+	IF NOT EXISTS (SELECT 1 FROM Users u where u.UserID = @UserID) OR NOT EXISTS (SELECT 1 FROM Recipe r WHERE r.RecipeID = @RecipeID)
+	BEGIN;
+		THROW 51018, '1 or more inputs do no exist', 1
+		RETURN
+	END
+	INSERT INTO HasEaten (UserID, RecipeId, Favorites, Stars) VALUES (@UserID, @RecipeID, @Favorites, @Stars)
+END
+GO
+CREATE OR ALTER PROCEDURE newIngredient
+(
+    @Name nvarchar(20),
+    @Desciption nvarchar(200)
+)
+AS
+BEGIN
+    IF (@Name IS NULL)
+    BEGIN;
+        THROW 51000, 'Null Input', 1;
+    END
+
+    INSERT INTO Ingredients ([Name], [Description])
+    VALUES (@Name, @Desciption);
+END
+GO
+CREATE OR ALTER PROCEDURE [soldByStore]
+(
+	@IngredientID int,
+	@StoreID int,
+	@Price money
+)
+AS
+BEGIN
+	IF(@IngredientID IS NULL OR @StoreID IS NULL OR @Price IS NULL)
+	BEGIN;
+		THROW 51019, 'Null Input', 1
+		RETURN
+	END
+	IF NOT EXISTS (SELECT 1 FROM GroceryStores g WHERE g.StoreID = @StoreID) OR NOT EXISTS (SELECT 1 FROM Ingredients i WHERE i.IngredientsID = @IngredientID)
+	BEGIN;
+		THROW 51020, '1 or more inputs do not exist', 1
+		RETURN
+	END
+	INSERT INTO SoldBy (IngredientID, StoreID, Price) VALUES (@IngredientID, @StoreID, @Price)
+END
+GO
+CREATE OR ALTER PROCEDURE addSubstituteToIngredient
+(
+	@IngredientID int,
+	@SubstituteID int
+)
+AS
+BEGIN
+	IF(@IngredientID IS NULL OR @SubstituteID IS NULL)
+	BEGIN;
+		THROW 51021, 'Null Input', 1
+		RETURN
+	END
+	IF NOT EXISTS (SELECT 1 FROM Ingredients i where i.IngredientsID = @IngredientID) OR NOT EXISTS (SELECT 1 FROM Ingredients i2 where i2.IngredientsID = @SubstituteID)
+	BEGIN;
+		THROW 51022, '1 or more inputs do not exist', 1
+		RETURN
+	END
+	INSERT INTO Substitutes (IngredientID, SubstituteID) VALUES (@IngredientID, @SubstituteID)
+END
+GO
+CREATE OR ALTER PROCEDURE addCuisineToRecipe
+(
+	@CuisineID int,
+	@RecipeID int
+)
+AS
+BEGIN
+	IF(@RecipeID IS NULL OR @CuisineID IS NULL)
+	BEGIN;
+		THROW 51021, 'Null Input', 1
+		RETURN
+	END
+	IF NOT EXISTS (SELECT 1 FROM Cuisine c where c.CuisineID = @CuisineID) OR NOT EXISTS (SELECT 1 FROM Recipe r where r.RecipeID = @RecipeID)
+	BEGIN;
+		THROW 51022, '1 or more inputs do not exist', 1
+		RETURN
+	END
+	INSERT INTO TypeOf (CuisineID, RecipeID) VALUES (@CuisineID, @RecipeID)
+END
+GO
+CREATE OR ALTER PROCEDURE addEquipToRecipe
+(
+	@CuisineID int,
+	@RecipeID int
+)
+AS
+BEGIN
+	IF(@RecipeID IS NULL OR @CuisineID IS NULL)
+	BEGIN;
+		THROW 51021, 'Null Input', 1
+		RETURN
+	END
+	IF NOT EXISTS (SELECT 1 FROM Cuisine c where c.CuisineID = @CuisineID) OR NOT EXISTS (SELECT 1 FROM Recipe r where r.RecipeID = @RecipeID)
+	BEGIN;
+		THROW 51022, '1 or more inputs do not exist', 1
+		RETURN
+	END
+	INSERT INTO TypeOf (CuisineID, RecipeID) VALUES (@CuisineID, @RecipeID)
+END
+GO
+CREATE OR ALTER PROCEDURE addEquipToRecipe
+(
+	@RecipeID int,
+	@EquipmentID int
+)
+AS
+BEGIN
+	IF(@RecipeID IS NULL OR @EquipmentID IS NULL)
+	BEGIN;
+		THROW 51021, 'Null Input', 1
+		RETURN
+	END
+	IF NOT EXISTS (SELECT 1 FROM Equipment e where e.EquipID = @EquipmentID) OR NOT EXISTS (SELECT 1 FROM Recipe r where r.RecipeID = @RecipeID)
+	BEGIN;
+		THROW 51022, '1 or more inputs do not exist', 1
+		RETURN
+	END
+	INSERT INTO UsingEquip(RecipeID, EquipmentID) VALUES (@RecipeID, @EquipmentID)
+END
+GO
+CREATE OR ALTER PROCEDURE addIngredientToRecipe
+(
+	@IngredientID int,
+	@RecipeID int,
+	@Quantity smallint
+)
+AS
+BEGIN
+	IF(@IngredientID IS NULL OR @RecipeID IS NULL OR @Quantity IS NULL)
+	BEGIN;
+		THROW 51023, 'Null Input', 1
+		RETURN
+	END
+	IF NOT EXISTS (SELECT 1 FROM Ingredients i WHERE i.IngredientsID = @IngredientID) OR NOT EXISTS (SELECT 1 FROM Recipe r WHERE r.RecipeID = @RecipeID)
+	BEGIN;
+		THROW 51025, '1 or more inputs do not exist', 1
+		RETURN
+	END
+	INSERT INTO UsingIngredients(IngredientID, RecipeID, Quantity) VALUES (@IngredientID, @RecipeID, @Quantity)
+END
+GO
+CREATE OR ALTER PROCEDURE registerNewUser (
+	@Username nvarchar(20),
+	@Address nvarchar(50),
+	@PasswordHash varbinary(64),
+	@Salt varbinary(32)
+)
+AS
+BEGIN
+	IF(@Username IS NULL OR @Address IS NULL OR @PasswordHash IS NULL OR @Salt IS NULL)
+	BEGIN;
+		THROW 51000, 'Null input', 1
+		RETURN
+	END
+
+	INSERT INTO Users (Username, [Address])
+	VALUES (@Username, @Address)
+
+	DECLARE @newUserID int
+	SET @newUserID = SCOPE_IDENTITY()
+
+	INSERT INTO UserAuth (UserID, PasswordHash, Salt)
+	VALUES (@newUserID, @PasswordHash, @Salt)
+END
+GO
+CREATE OR ALTER PROCEDURE DeleteUser(
+	@userID int
+)
+AS
+BEGIN
+	IF (@userID IS NULL)
+	BEGIN;
+		THROW 51000, 'userID cannot be null', 1
+		RETURN
+	END
+	IF NOT EXISTS (SELECT 1 FROM Users u WHERE u.UserID = @userID)
+	BEGIN;
+		THROW 51001, 'User does not exist.', 1
+		RETURN
+	END
+	-- Cascades to delete all of the users recipes, which will cascade and delete their recipes from other peoples has eaten history
+	DELETE 
+	FROM Users
+	WHERE UserID = @userID
+END
+GO
+CREATE PROCEDURE deleteRestaurant(
+	@RestID int
+)
+AS
+BEGIN
+
+IF (@RestID IS NULL)
+THROW 51000, 'ID is null', 1;
+
+IF NOT EXISTS(SELECT * FROM Restaurant WHERE @RestID = RestID)
+THROW 51001, 'Restaurant could not be found', 1;
+
+DELETE FROM Restaurant WHERE @RestID = RestID
+
+END
+GO
+CREATE OR ALTER PROCEDURE changeUsername(
+	@userID int,
+	@newUsername nvarchar(20)
+)
+AS
+BEGIN
+	IF(@userID IS NULL OR @newUsername IS NULL)
+	BEGIN;
+		THROW 51000, 'Null Input', 1
+		RETURN
+	END
+
+	IF NOT EXISTS (SELECT 1 FROM Users u WHERE u.UserID = @userID)
+	BEGIN;
+		THROW 51001, 'User does not exist.', 1
+		RETURN
+	END
+
+	UPDATE Users
+	SET Username = @newUsername
+	WHERE UserID = @userID
+END
+GO
+CREATE OR ALTER PROCEDURE changeAddress(
+	@userID int,
+	@newAddress nvarchar(50)
+)
+AS
+BEGIN
+	IF(@userID IS NULL OR @newAddress IS NULL)
+	BEGIN;
+		THROW 51002, 'Null Input', 1
+		RETURN
+	END
+
+	IF NOT EXISTS(SELECT 1 FROM Users u WHERE u.UserID = @userID)
+	BEGIN;
+		THROW 51003, 'User does not exist.', 1
+		RETURN
+	END
+
+	UPDATE Users
+	SET [Address] = @newAddress
+	WHERE UserID = @userID
+END
+GO
+CREATE OR ALTER PROCEDURE changePriceOfItem(
+	@RestaurantID int,
+	@RecipeID int,
+	@newCost money
+)
+AS
+BEGIN
+	IF(@RecipeID IS NULL OR @RestaurantID IS NULL OR @newCost IS NULL)
+	BEGIN;
+		THROW 51004, 'Null Input', 1
+		RETURN
+	END
+
+	IF NOT EXISTS(SELECT 1 FROM Restaurant r WHERE r.RestID = @RestaurantID)
+	BEGIN;
+		THROW 51005, 'Restaurant does not exist', 1
+		RETURN
+	END
+
+	IF NOT EXISTS(SELECT 1 FROM Recipe ri WHERE ri.RecipeID = @RecipeID)
+	BEGIN;
+		THROW 51006, 'Recipe does not exist', 1
+		RETURN
+	END
+
+	UPDATE Cooks
+	SET [CostOfItem] = @newCost
+	WHERE RecipeID = @RecipeID AND RestaurantID = @RestaurantID
+END
+GO
+CREATE OR ALTER PROCEDURE updateRecipe(
+	@recipeID int,
+	@newServingSize smallint = null,
+	@newTypeOfDish nvarchar(10) = null,
+	@newCalories smallint = null,
+	@newDescription nvarchar(200) = null,
+	@newTimeToCook smallint = null,
+	@newInstructionSet nvarchar(500) = null
+)
+AS
+BEGIN
+	IF(@recipeID IS NULL)
+	BEGIN;
+		THROW 51007,'Null Input', 1
+		RETURN
+	END
+
+	IF NOT EXISTS(SELECT 1 FROM Recipe r WHERE r.RecipeID = @recipeID)
+	BEGIN;
+		THROW 51008, 'Recipe does not exist', 1
+		RETURN
+	END
+
+	IF(@newCalories <> null)
+	BEGIN
+		UPDATE Recipe
+		SET Calories = @newCalories
+		WHERE RecipeID = @recipeID
+	END
+
+	IF(@newTypeOfDish <> null)
+	BEGIN
+		UPDATE Recipe
+		SET TypeOfDish = @newTypeOfDish
+		WHERE RecipeID = @recipeID
+	END
+
+	IF(@newServingSize <> null)
+	BEGIN
+		UPDATE Recipe
+		SET ServingSize = @newServingSize
+		WHERE RecipeID = @recipeID
+	END
+
+	IF(@newDescription <> null)
+	BEGIN
+		UPDATE Recipe
+		SET [Description] = @newDescription
+		WHERE RecipeID = @recipeID
+	END
+
+	IF(@newTimeToCook <> null)
+	BEGIN
+		UPDATE Recipe
+		SET TimeToCook = @newTimeToCook
+		WHERE RecipeID = @recipeID
+	END
+
+	IF(@newInstructionSet <> null)
+	BEGIN
+		UPDATE Recipe
+		SET InstructionSet = @newInstructionSet
+		WHERE RecipeID = @recipeID
+	END
+END
+GO	
+CREATE OR ALTER PROCEDURE getHasEatenByUser
+(
+    @UserID int
+)
+AS
+BEGIN
+    IF (@UserID IS NULL)
+    BEGIN;
+        THROW 51100, 'Null Input', 1
+        RETURN
+    END
+    SELECT UserID, RecipeID, Favorites, Stars FROM HasEaten WHERE UserID = @UserID
+END
+GO
+CREATE OR ALTER PROCEDURE getUserFavorites
+(
+    @UserID int
+)
+AS
+BEGIN
+    IF (@UserID IS NULL)
+    BEGIN;
+        THROW 51101, 'Null Input', 1
+        RETURN
+    END
+    SELECT UserID, RecipeID, Favorites, Stars FROM HasEaten WHERE UserID = @UserID AND Favorites = 1
+END
+GO
+CREATE OR ALTER PROCEDURE getHasEatenRecord
+(
+    @UserID int,
+    @RecipeID int
+)
+AS
+BEGIN
+    IF (@UserID IS NULL OR @RecipeID IS NULL)
+    BEGIN;
+        THROW 51102, 'Null Input', 1
+        RETURN
+    END
+    SELECT UserID, RecipeID, Favorites, Stars FROM HasEaten WHERE UserID = @UserID AND RecipeID = @RecipeID
+END
+GO
+CREATE OR ALTER PROCEDURE hasEatenExists
+(
+    @UserID int,
+    @RecipeID int
+)
+AS
+BEGIN
+    IF (@UserID IS NULL OR @RecipeID IS NULL)
+    BEGIN;
+        THROW 51103, 'Null Input', 1
+        RETURN
+    END
+    SELECT COUNT(*) AS RecordCount FROM HasEaten WHERE UserID = @UserID AND RecipeID = @RecipeID
+END
+GO
+CREATE OR ALTER PROCEDURE updateHasEaten
+(
+    @UserID int,
+    @RecipeID int,
+    @Favorites bit = NULL,
+    @Stars int = NULL
+)
+AS
+BEGIN
+    IF (@UserID IS NULL OR @RecipeID IS NULL)
+    BEGIN;
+        THROW 51104, 'Null Input', 1
+        RETURN
+    END
+    UPDATE HasEaten SET Favorites = COALESCE(@Favorites, Favorites), Stars = COALESCE(@Stars, Stars) WHERE UserID = @UserID AND RecipeID = @RecipeID
+END
+GO
+CREATE OR ALTER PROCEDURE getAllUsers
+AS
+BEGIN
+    SELECT UserID, Username, [Address] FROM Users
+END
+GO
+
+CREATE OR ALTER PROCEDURE getUserById
+(
+    @UserID int
+)
+AS
+BEGIN
+    IF (@UserID IS NULL)
+    BEGIN;
+        THROW 51105, 'Null Input', 1
+        RETURN
+    END
+    SELECT UserID, Username, [Address] FROM Users WHERE UserID = @UserID
+END
+GO
+CREATE OR ALTER PROCEDURE getUserByUsername
+(
+    @Username nvarchar(20)
+)
+AS
+BEGIN
+    IF (@Username IS NULL)
+    BEGIN;
+        THROW 51106, 'Null Input', 1
+        RETURN
+    END
+    SELECT UserID, Username, [Address] FROM Users WHERE Username = @Username
+END
+GO
+CREATE OR ALTER PROCEDURE getUserAuth
+(
+    @UserID int
+)
+AS
+BEGIN
+    IF (@UserID IS NULL)
+    BEGIN;
+        THROW 51107, 'Null Input', 1
+        RETURN
+    END
+    SELECT UserID, PasswordHash, Salt FROM UserAuth WHERE UserID = @UserID
+END
+GO
+CREATE OR ALTER PROCEDURE getAllRestaurants
+AS
+BEGIN
+    SELECT RestID, [Name], Rating, [Address] FROM Restaurant
+END
+GO
+CREATE OR ALTER PROCEDURE getRestaurantById
+(
+    @RestID int
+)
+AS
+BEGIN
+    IF (@RestID IS NULL)
+    BEGIN;
+        THROW 51108, 'Null Input', 1
+        RETURN
+    END
+    SELECT RestID, [Name], Rating, [Address] FROM Restaurant WHERE RestID = @RestID
+END
+GO
+CREATE OR ALTER PROCEDURE getAllIngredients
+AS
+BEGIN
+    SELECT IngredientsID, [Name], [Description] FROM Ingredients
+END
+GO
+CREATE OR ALTER PROCEDURE getIngredientById
+(
+    @IngredientID int
+)
+AS
+BEGIN
+    IF (@IngredientID IS NULL)
+    BEGIN;
+        THROW 51109, 'Null Input', 1
+        RETURN
+    END
+    SELECT IngredientsID, [Name], [Description] FROM Ingredients WHERE IngredientsID = @IngredientID
+END
+GO
+CREATE OR ALTER PROCEDURE getStoresByIngredient
+(
+    @IngredientID int
+)
+AS
+BEGIN
+    IF (@IngredientID IS NULL)
+    BEGIN;
+        THROW 51110, 'Null Input', 1
+        RETURN
+    END
+    SELECT gs.[Name] FROM GroceryStores gs
+    INNER JOIN SoldBy sb ON gs.StoreID = sb.StoreID
+    WHERE sb.IngredientID = @IngredientID
+END
+GO
+CREATE OR ALTER PROCEDURE getAllRecipes
+AS
+BEGIN
+    SELECT RecipeID, [Name], ServingSize, UserAuthorID, RestaurantAuthorId, 
+           TypeOfDish, Calories, [Description], TimeToCook, InstructionSet 
+    FROM Recipe
+END
+GO
+CREATE OR ALTER PROCEDURE getRecipeById
+(
+    @RecipeID int
+)
+AS
+BEGIN
+    IF (@RecipeID IS NULL)
+    BEGIN;
+        THROW 51111, 'Null Input', 1
+        RETURN
+    END
+    SELECT RecipeID, [Name], ServingSize, UserAuthorID, RestaurantAuthorId, 
+           TypeOfDish, Calories, [Description], TimeToCook, InstructionSet 
+    FROM Recipe WHERE RecipeID = @RecipeID
+END
+GO
+CREATE OR ALTER PROCEDURE getRecipeAvgStars
+(
+    @RecipeID int
+)
+AS
+BEGIN
+    IF (@RecipeID IS NULL)
+    BEGIN;
+        THROW 51112, 'Null Input', 1
+        RETURN
+    END
+    IF NOT EXISTS (SELECT 1 FROM Recipe r WHERE r.RecipeID = @RecipeID)
+    BEGIN;
+        THROW 51113, 'Recipe does not exist', 1
+        RETURN
+    END
+    SELECT AVG(CAST(Stars AS FLOAT)) AS AvgStars FROM HasEaten WHERE RecipeID = @RecipeID
+END
+GO
+CREATE OR ALTER PROCEDURE getAllEquipment
+AS
+BEGIN
+    SELECT EquipID, [Name], [Description] FROM Equipment
+END
+GO
+CREATE OR ALTER PROCEDURE getEquipmentById
+(
+    @EquipID int
+)
+AS
+BEGIN
+    IF (@EquipID IS NULL)
+    BEGIN;
+        THROW 51116, 'Null Input', 1
+        RETURN
+    END
+    SELECT EquipID, [Name], [Description] FROM Equipment WHERE EquipID = @EquipID
+END
+GO
+CREATE OR ALTER PROCEDURE getAllGroceryStores
+AS
+BEGIN
+    SELECT StoreID, [Name], [Address] FROM GroceryStores
+END
+GO
+CREATE OR ALTER PROCEDURE getGroceryStoreById
+(
+    @StoreID int
+)
+AS
+BEGIN
+    IF (@StoreID IS NULL)
+    BEGIN;
+        THROW 51117, 'Null Input', 1
+        RETURN
+    END
+    SELECT StoreID, [Name], [Address] FROM GroceryStores WHERE StoreID = @StoreID
+END
+GO
+CREATE OR ALTER PROCEDURE getAllCuisines
+AS
+BEGIN
+    SELECT CuisineID, [Name], [Description] FROM Cuisine
+END
+GO
+CREATE OR ALTER PROCEDURE getCuisineById
+(
+    @CuisineID int
+)
+AS
+BEGIN
+    IF (@CuisineID IS NULL)
+    BEGIN;
+        THROW 51118, 'Null Input', 1
+        RETURN
+    END
+    SELECT CuisineID, [Name], [Description] FROM Cuisine WHERE CuisineID = @CuisineID
+END
+GO
+CREATE OR ALTER PROCEDURE getBestPairsWith
+(
+    @MainRecipeID int
+)
+AS
+BEGIN
+    IF (@MainRecipeID IS NULL)
+    BEGIN;
+        THROW 51119, 'Null Input', 1
+        RETURN
+    END
+    SELECT MainRecipeID, SideRecipeID FROM BestPairsWith WHERE MainRecipeID = @MainRecipeID
+END
+GO
+CREATE OR ALTER PROCEDURE getIngredientSubstitutes
+(
+    @IngredientID int
+)
+AS
+BEGIN
+    IF (@IngredientID IS NULL)
+    BEGIN;
+        THROW 51122, 'Null Input', 1
+        RETURN
+    END
+    SELECT IngredientID, SubstituteID FROM Substitutes WHERE IngredientID = @IngredientID
+END
+GO
+CREATE OR ALTER PROCEDURE newBestPairsWith
+(
+    @MainRecipeID int,
+    @SideRecipeID int
+)
+AS
+BEGIN
+    IF (@MainRecipeID IS NULL OR @SideRecipeID IS NULL)
+    BEGIN;
+        THROW 51120, 'Null Input', 1
+        RETURN
+    END
+
+    IF (@MainRecipeID = @SideRecipeID)
+    BEGIN;
+        THROW 51121, 'Main recipe cannot pair to itself', 1
+        RETURN
+    END
+    IF EXISTS (SELECT 1 FROM BestPairsWith WHERE 
+        (MainRecipeID = @MainRecipeID AND SideRecipeID = @SideRecipeID) OR
+        (MainRecipeID = @SideRecipeID AND SideRecipeID = @MainRecipeID))
+    BEGIN;
+        THROW 51122, 'This Pair already Exists', 1
+        RETURN
+    END
+    INSERT INTO BestPairsWith (MainRecipeID, SideRecipeID) VALUES (@MainRecipeID, @SideRecipeID)
+    INSERT INTO BestPairsWith (MainRecipeID, SideRecipeID) VALUES (@SideRecipeID, @MainRecipeID)
+END
+GO
+CREATE OR ALTER PROCEDURE newSubstitutes
+(
+    @IngredientID int,
+    @SubstituteID int
+)
+AS
+BEGIN
+    IF (@IngredientID IS NULL OR @SubstituteID IS NULL)
+    BEGIN;
+        THROW 51123, 'Null Input', 1
+        RETURN
+    END
+
+    IF (@IngredientID = @SubstituteID)
+    BEGIN;
+        THROW 51124, 'Cannot be the same', 1
+        RETURN
+    END
+
+    IF EXISTS (SELECT 1 FROM Substitutes WHERE 
+        (IngredientID = @IngredientID AND SubstituteID = @SubstituteID) OR
+        (IngredientID = @SubstituteID AND SubstituteID = @IngredientID))
+    BEGIN;
+        THROW 51125, 'This Pair already exists', 1
+        RETURN
+    END
+
+    INSERT INTO Substitutes (IngredientID, SubstituteID) VALUES (@IngredientID, @SubstituteID)
+    INSERT INTO Substitutes (IngredientID, SubstituteID) VALUES (@SubstituteID, @IngredientID)
+END
+GO
+CREATE OR ALTER VIEW vw_RecipeRatings 
+AS
+SELECT
+    r.RecipeID,
+    r.Name AS RecipeName,
+    AVG(CAST(h.Stars AS FLOAT)) AS AvgStars,
+    COUNT(h.Stars) AS NumReviews
+FROM Recipe r
+LEFT JOIN HasEaten h ON r.RecipeID = h.RecipeID
+GROUP BY r.RecipeID, r.Name;
+GO
+CREATE OR ALTER VIEW vw_RecipeDetails
+AS
+SELECT
+	r.Name AS RecipeName,
+	r.ServingSize,
+	u.Username AS Author,
+	r.TypeOfDish,
+	r.Calories,
+	r.TimeToCook,
+	r.Description,
+	r.InstructionSet
+FROM Recipe r
+LEFT JOIN Users u ON (u.UserID = r.UserAuthorID)
+GO
+CREATE OR ALTER VIEW vw_RecipeIngredients
+AS
+SELECT
+	i.Name AS IngredientName,
+	r.Name AS RecipeName,
+	ui.Quantity
+FROM UsingIngredients ui
+JOIN Recipe r ON r.RecipeID = ui.RecipeID
+JOIN Ingredients i ON i.IngredientsID = ui.IngredientID
+GO
+CREATE OR ALTER VIEW vw_RecipeEquipment
+AS
+SELECT
+	r.Name AS RecipeName,
+	e.Name AS EquipmentName
+FROM UsingEquip ue
+JOIN Recipe r ON r.RecipeID = ue.RecipeID
+JOIN Equipment e ON e.EquipID = ue.EquipmentID
+GO
+CREATE OR ALTER VIEW vw_RecipeCuisine
+AS
+SELECT
+	r.Name AS RecipeName,
+	c.Name AS CuisineName
+FROM TypeOf t
+JOIN Recipe r ON r.RecipeID = t.RecipeID
+JOIN Cuisine c ON c.CuisineID = t.CuisineID
+GO
+CREATE OR ALTER VIEW vw_UserHistory
+AS
+SELECT
+	u.Username,
+	r.Name AS RecipeName,
+	h.Favorites,
+	h.Stars
+FROM HasEaten h
+JOIN Users u ON h.UserID = u.UserID
+JOIN Recipe r ON r.RecipeID = h.RecipeID
+GO
+CREATE OR ALTER VIEW vw_UserFavorites
+AS
+SELECT
+	u.Username,
+	r.Name AS RecipeName
+FROM HasEaten h
+JOIN Users u ON h.UserID = u.UserID
+JOIN Recipe r ON r.RecipeID = h.RecipeID
+WHERE h.Favorites = 1
+GO
+CREATE OR ALTER VIEW vw_IngredientPrices
+AS
+SELECT
+	i.Name AS Ingredient,
+	sb.Price,
+	g.Name AS GroceryStore,
+	g.Address
+FROM
+SoldBy sb
+JOIN Ingredients i ON i.IngredientsID = sb.IngredientID
+JOIN GroceryStores g ON g.StoreID = sb.StoreID
+GO
+CREATE OR ALTER VIEW vw_IngredientSubstitutes
+AS
+SELECT
+	i1.Name AS Main,
+	i2.Name AS Side
+FROM
+Substitutes s
+JOIN Ingredients i1 ON i1.IngredientsID = s.IngredientID
+JOIN Ingredients i2 ON i2.IngredientsID = s.SubstituteID
+GO
+CREATE OR ALTER VIEW vw_RecipePairs
+AS
+SELECT
+	r1.Name AS MainRecipe,
+	r2.Name AS SideRecipe
+FROM BestPairsWith b
+JOIN Recipe r1 ON b.MainRecipeID = r1.RecipeID
+JOIN Recipe r2 ON b.SideRecipeID = r2.RecipeID
+GO
+CREATE USER SaltAndSchemaUser FOR LOGIN SaltAndSchemaUser
+GO
+ALTER ROLE db_datareader ADD MEMBER SaltAndSchemaUser
+GO
+ALTER ROLE db_datawriter ADD MEMBER SaltAndSchemaUser
+GO
+GRANT EXECUTE TO SaltAndSchemaUser
