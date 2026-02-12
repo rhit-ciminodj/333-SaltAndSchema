@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Store, MapPin, Filter, Plus } from 'lucide-react';
 import { Card, CardBody, SearchInput, Button, Input } from '../components/ui';
-import { storeApi } from '../services/api';
+import { storeApi, groceryStoreOwnersApi, authUtils } from '../services/api';
 
 export function StoresPage() {
   const [stores, setStores] = useState([]);
@@ -13,10 +13,34 @@ export function StoresPage() {
   const [newStore, setNewStore] = useState({ name: '', address: '' });
   const [createLoading, setCreateLoading] = useState(false);
   const [createError, setCreateError] = useState('');
+  const [isGroceryStoreOwner, setIsGroceryStoreOwner] = useState(false);
+  const [hasOwnedStore, setHasOwnedStore] = useState(false);
+
+  const user = authUtils.getUser();
 
   useEffect(() => {
     loadStores();
+    checkOwnerStatus();
   }, []);
+
+  const checkOwnerStatus = async () => {
+    if (!user) return;
+    try {
+      const isOwner = await groceryStoreOwnersApi.isOwner(user.userID);
+      setIsGroceryStoreOwner(isOwner);
+      if (isOwner) {
+        // Check if they already own a store
+        try {
+          const owned = await groceryStoreOwnersApi.getOwnedStore(user.userID);
+          setHasOwnedStore(owned && owned.length > 0);
+        } catch {
+          setHasOwnedStore(false);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to check owner status:', err);
+    }
+  };
 
   const loadStores = async () => {
     try {
@@ -89,10 +113,12 @@ export function StoresPage() {
           <h1 className="text-4xl font-bold text-white mb-2">Grocery Stores</h1>
           <p className="text-zinc-400">Find {stores.length} grocery stores near you</p>
         </div>
-        <Button onClick={() => setShowCreateForm(!showCreateForm)}>
-          <Plus className="w-4 h-4" />
-          Add Store
-        </Button>
+        {isGroceryStoreOwner && !hasOwnedStore && (
+          <Button onClick={() => setShowCreateForm(!showCreateForm)}>
+            <Plus className="w-4 h-4" />
+            Add Store
+          </Button>
+        )}
       </div>
 
       {/* Create Form */}

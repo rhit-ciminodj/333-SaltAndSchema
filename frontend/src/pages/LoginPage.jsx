@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardBody, CardHeader, Button, Input } from '../components/ui';
-import { userApi, authUtils, restaurantApi, restaurantOwnersApi } from '../services/api';
+import { userApi, authUtils, restaurantApi, restaurantOwnersApi, storeApi, groceryStoreOwnersApi } from '../services/api';
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -9,6 +9,7 @@ export function LoginPage() {
   const [isRegistering, setIsRegistering] = useState(false);
   const [accountType, setAccountType] = useState('regular');
   const [restaurantForm, setRestaurantForm] = useState({ name: '', address: '', rating: 3 });
+  const [groceryStoreForm, setGroceryStoreForm] = useState({ name: '', address: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -52,6 +53,27 @@ export function LoginPage() {
           authUtils.saveUser(user);
           setSuccess('Restaurant owner account created! Redirecting...');
           setTimeout(() => navigate('/restaurants'), 1000);
+        } else if (accountType === 'groceryStoreOwner') {
+          // Auto-login to get user data
+          const user = await userApi.login(form.username, form.password);
+          
+          // Create the grocery store
+          await storeApi.create(groceryStoreForm);
+          
+          // Get the newly created store
+          const allStores = await storeApi.getAll();
+          const newStore = allStores.find(
+            s => s.name === groceryStoreForm.name && s.address === groceryStoreForm.address
+          );
+          
+          if (newStore) {
+            // Assign store to owner
+            await groceryStoreOwnersApi.assignStore(user.userID, newStore.storeID);
+          }
+          
+          authUtils.saveUser(user);
+          setSuccess('Grocery store owner account created! Redirecting...');
+          setTimeout(() => navigate('/stores'), 1000);
         } else {
           setSuccess('Account created! You can now sign in.');
           setIsRegistering(false);
@@ -167,6 +189,17 @@ export function LoginPage() {
                         />
                         <span className="text-sm text-zinc-300">Restaurant Owner</span>
                       </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="accountType"
+                          value="groceryStoreOwner"
+                          checked={accountType === 'groceryStoreOwner'}
+                          onChange={(e) => setAccountType(e.target.value)}
+                          className="w-4 h-4 text-amber-500"
+                        />
+                        <span className="text-sm text-zinc-300">Grocery Store Owner</span>
+                      </label>
                     </div>
                   </div>
                 )}
@@ -201,6 +234,28 @@ export function LoginPage() {
                     />
                   </div>
                 )}
+
+                {isRegistering && accountType === 'groceryStoreOwner' && (
+                  <div className="space-y-4 p-4 border border-blue-500/30 rounded-lg bg-blue-500/5">
+                    <h3 className="text-sm font-medium text-blue-300">Grocery Store Details</h3>
+                    <Input
+                      label="Store Name"
+                      value={groceryStoreForm.name}
+                      onChange={(e) => setGroceryStoreForm({ ...groceryStoreForm, name: e.target.value })}
+                      placeholder="e.g. Roberto's Market"
+                      required
+                      maxLength={20}
+                    />
+                    <Input
+                      label="Store Address"
+                      value={groceryStoreForm.address}
+                      onChange={(e) => setGroceryStoreForm({ ...groceryStoreForm, address: e.target.value })}
+                      placeholder="789 Commerce Ave"
+                      required
+                      maxLength={50}
+                    />
+                  </div>
+                )}
                 <Input
                   label="Password"
                   name="password"
@@ -226,10 +281,14 @@ export function LoginPage() {
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading
                     ? isRegistering
-                      ? accountType === 'restaurantOwner' ? 'Creating restaurant account...' : 'Creating account...'
+                      ? accountType === 'restaurantOwner' ? 'Creating restaurant account...' 
+                        : accountType === 'groceryStoreOwner' ? 'Creating store account...'
+                        : 'Creating account...'
                       : 'Signing in...'
                     : isRegistering
-                      ? accountType === 'restaurantOwner' ? 'Create Restaurant Account' : 'Create Account'
+                      ? accountType === 'restaurantOwner' ? 'Create Restaurant Account' 
+                        : accountType === 'groceryStoreOwner' ? 'Create Store Account'
+                        : 'Create Account'
                       : 'Sign In'}
                 </Button>
                 <button
@@ -239,6 +298,7 @@ export function LoginPage() {
                     setIsRegistering((prev) => !prev);
                     setAccountType('regular');
                     setRestaurantForm({ name: '', address: '', rating: 3 });
+                    setGroceryStoreForm({ name: '', address: '' });
                     setError('');
                     setSuccess('');
                   }}

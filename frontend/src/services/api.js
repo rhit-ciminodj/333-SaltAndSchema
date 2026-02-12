@@ -316,6 +316,28 @@ export const restaurantOwnersApi = {
   },
 };
 
+// ============= GROCERY STORE OWNERS =============
+
+export const groceryStoreOwnersApi = {
+  // Check if user is a grocery store owner
+  isOwner: async (userId) => {
+    const response = await api.get(`/grocerystoreowners/isowner/${userId}`);
+    return response.data;
+  },
+
+  // Get user's owned grocery store
+  getOwnedStore: async (userId) => {
+    const response = await api.get(`/grocerystoreowners/${userId}`);
+    return response.data;
+  },
+
+  // Assign grocery store to owner
+  assignStore: async (userId, storeId) => {
+    const response = await api.post(`/grocerystoreowners/assign/${userId}/${storeId}`);
+    return response.data;
+  },
+};
+
 // ============= AUTH HELPERS =============
 
 const AUTH_KEY = 'saltandschema_user';
