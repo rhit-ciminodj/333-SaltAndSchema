@@ -1257,7 +1257,7 @@ BEGIN
 	SELECT * FROM UsingEquip WHERE @RecipeID = RecipeID
 END
 GO
-CREATE OR ALTER PROCEDURE getUsingEquip(
+CREATE OR ALTER PROCEDURE getUsingIngredients(
 	@RecipeID int
 )
 AS
@@ -1267,12 +1267,12 @@ BEGIN
 		THROW 55000, 'Null Input', 1
 	END
 
-	IF NOT EXISTS(SELECT * FROM UsingEquip WHERE @RecipeID = RecipeID)
+	IF NOT EXISTS(SELECT * FROM UsingIngredients WHERE @RecipeID = RecipeID)
 	BEGIN;
 		THROW 55001, 'Recipe does not exist', 1
 	END
 
-	SELECT * FROM UsingEquip WHERE @RecipeID = RecipeID
+	SELECT * FROM UsingIngredients WHERE @RecipeID = RecipeID
 END
 GO
 CREATE OR ALTER PROCEDURE assignRestaurantToOwner
