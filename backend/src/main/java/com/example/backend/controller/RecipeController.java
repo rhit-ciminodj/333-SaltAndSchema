@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.backend.dto.RecipeMatchRequest;
 import com.example.backend.entity.Recipe;
 import com.example.backend.service.RecipeService;
 
@@ -21,6 +22,16 @@ public class RecipeController {
 
     @Autowired
     private RecipeService recipeService;
+
+    @PostMapping("/match")
+    public ResponseEntity<List<RecipeMatchRequest>> getMatchRecipe(@RequestBody List<String> ingredients) {
+        try {
+            List<RecipeMatchRequest> recipes = recipeService.getMatchRecipe(ingredients);
+            return ResponseEntity.ok(recipes);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
 
     @GetMapping
     public List<Recipe> getAllRecipes() {

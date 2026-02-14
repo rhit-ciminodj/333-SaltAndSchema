@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { ChefHat, Clock, Flame, Users, Filter, Plus } from 'lucide-react';
+import { ChefHat, Clock, Flame, Users, Filter, Plus, Sparkles } from 'lucide-react';
 import { Card, CardBody, Badge, StarRating, SearchInput, Select, Button, Input } from '../components/ui';
 import { recipeApi, authUtils } from '../services/api';
 
@@ -21,6 +21,10 @@ export function RecipesPage() {
     timeToCook: 30,
     instructionSet: '',
   });
+  const [pantryInput, setPantryInput] = useState('');
+  const [matchResults, setMatchResults] = useState([]);
+  const [matchLoading, setMatchLoading] = useState(false);
+  const [matchError, setMatchError] = useState('');
   const [createLoading, setCreateLoading] = useState(false);
   const [createError, setCreateError] = useState('');
 
@@ -118,6 +122,39 @@ export function RecipesPage() {
     } finally {
       setCreateLoading(false);
     }
+  };
+
+  const parseIngredientNames = (value) => value
+    .split(',')
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0);
+
+  const handleMatchRecipes = async (e) => {
+    e.preventDefault();
+    const ingredients = parseIngredientNames(pantryInput);
+    if (ingredients.length === 0) {
+      setMatchResults([]);
+      setMatchError('Enter at least one ingredient.');
+      return;
+    }
+
+    setMatchLoading(true);
+    setMatchError('');
+    try {
+      const results = await recipeApi.matchByIngredients(ingredients);
+      setMatchResults(results);
+    } catch (err) {
+      setMatchError('Failed to match recipes');
+      console.error(err);
+    } finally {
+      setMatchLoading(false);
+    }
+  };
+
+  const handleClearMatch = () => {
+    setPantryInput('');
+    setMatchResults([]);
+    setMatchError('');
   };
 
   if (loading) {
@@ -259,6 +296,75 @@ export function RecipesPage() {
           </div>
         </CardBody>
       </Card>
+
+      {/* Pantry Match */}
+      <Card className="mb-8" hover={false}>
+        <CardBody>
+          <div className="flex items-center gap-2 mb-4 text-zinc-400">
+            <Sparkles className="w-5 h-5" />
+            <span className="font-medium">Pantry Match</span>
+          </div>
+          <form onSubmit={handleMatchRecipes} className="flex flex-col sm:flex-row gap-3">
+            <Input
+              label="Your ingredients"
+              value={pantryInput}
+              onChange={(e) => setPantryInput(e.target.value)}
+              placeholder="tomato, basil, garlic"
+              className="flex-1"
+            />
+            <div className="flex gap-2 sm:items-end">
+              <Button type="submit" disabled={matchLoading}>
+                {matchLoading ? 'Matching...' : 'Find Matches'}
+              </Button>
+              <Button type="button" variant="secondary" onClick={handleClearMatch}>
+                Clear
+              </Button>
+            </div>
+          </form>
+          {matchError && (
+            <p className="mt-2 text-sm text-red-400">{matchError}</p>
+          )}
+        </CardBody>
+      </Card>
+
+      {matchResults.length > 0 && (
+        <div className="mb-10">
+          <h2 className="text-xl font-semibold text-white mb-4">Pantry Match Results</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {matchResults.map((recipe) => (
+              <Link key={`match-${recipe.recipeID}`} to={`/recipes/${recipe.recipeID}`}>
+                <Card className="h-full group">
+                  <div className="aspect-video bg-gradient-to-br from-zinc-800 to-zinc-900 relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                    <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
+                      {recipe.typeOfDish && <Badge variant="primary">{recipe.typeOfDish}</Badge>}
+                      <Badge variant="success">{Math.round(recipe.matchPercent)}% match</Badge>
+                    </div>
+                    <ChefHat className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 text-zinc-700 group-hover:text-amber-500/30 transition-colors" />
+                  </div>
+                  <CardBody>
+                    <h3 className="font-semibold text-white mb-2 group-hover:text-amber-400 transition-colors">
+                      {recipe.name}
+                    </h3>
+                    <p className="text-zinc-500 text-sm mb-3 line-clamp-2">
+                      {recipe.description}
+                    </p>
+                    <div className="flex items-center gap-3 text-sm text-zinc-400 mb-3">
+                      <span>{recipe.matchedCount} of {recipe.totalCount} ingredients</span>
+                    </div>
+                  </CardBody>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {!matchLoading && pantryInput.trim() && matchResults.length === 0 && !matchError && (
+        <div className="mb-10 text-zinc-400">
+          No matches yet. Try adding more ingredients.
+        </div>
+      )}
 
       {/* Results Count */}
       <div className="mb-6 text-zinc-400">

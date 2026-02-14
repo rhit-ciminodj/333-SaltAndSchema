@@ -946,6 +946,46 @@ BEGIN
     SELECT AVG(CAST(Stars AS FLOAT)) AS AvgStars FROM HasEaten WHERE RecipeID = @RecipeID
 END
 GO
+CREATE OR ALTER PROCEDURE getRecipeMatchesByIngredients
+(
+	@IngredientNames nvarchar(max)
+)
+AS
+BEGIN
+	IF (@IngredientNames IS NULL OR @IngredientNames = '')
+	BEGIN;
+		THROW 51150, 'Null Input', 1
+		RETURN
+	END
+
+	;WITH input AS (
+		SELECT DISTINCT LOWER(value) AS [Name]
+		FROM STRING_SPLIT(@IngredientNames, ',')
+		WHERE value <> ''
+	),
+	recipe_totals AS (
+		SELECT ui.RecipeID, COUNT(DISTINCT ui.IngredientID) AS TotalCount
+		FROM UsingIngredients ui
+		GROUP BY ui.RecipeID
+	),
+	matched AS (
+		SELECT ui.RecipeID, COUNT(DISTINCT ui.IngredientID) AS MatchedCount
+		FROM UsingIngredients ui
+		JOIN Ingredients i ON i.IngredientsID = ui.IngredientID
+		JOIN input ii ON LOWER(i.[Name]) = ii.[Name]
+		GROUP BY ui.RecipeID
+	)
+	SELECT r.RecipeID, r.[Name], r.ServingSize, r.UserAuthorID, r.RestaurantAuthorId,
+		   r.TypeOfDish, r.Calories, r.[Description], r.TimeToCook, r.InstructionSet,
+		   COALESCE(m.MatchedCount, 0) AS MatchedCount,
+		   t.TotalCount AS TotalCount,
+		   CAST(COALESCE(m.MatchedCount, 0) AS FLOAT) / NULLIF(t.TotalCount, 0) * 100 AS MatchPercent
+	FROM Recipe r
+	JOIN recipe_totals t ON t.RecipeID = r.RecipeID
+	LEFT JOIN matched m ON m.RecipeID = r.RecipeID
+	ORDER BY CAST(COALESCE(m.MatchedCount, 0) AS FLOAT) / NULLIF(t.TotalCount, 0) DESC, r.[Name]
+END
+GO
 CREATE OR ALTER PROCEDURE getAllEquipment
 AS
 BEGIN

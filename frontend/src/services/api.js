@@ -61,6 +61,12 @@ export const recipeApi = {
     });
     return response.data;
   },
+
+  // Match recipes by ingredient names
+  matchByIngredients: async (ingredientNames) => {
+    const response = await api.post('/recipes/match', ingredientNames);
+    return response.data.map(normalizeRecipeMatch);
+  },
 };
 
 // ============= INGREDIENTS =============
@@ -381,6 +387,17 @@ function normalizeRecipe(recipe) {
     description: recipe.description,
     timeToCook: recipe.timeToCook,
     instructionSet: recipe.instructionSet,
+  };
+}
+
+function normalizeRecipeMatch(recipe) {
+  const base = normalizeRecipe(recipe);
+  if (!base) return null;
+  return {
+    ...base,
+    matchedCount: recipe.matchedCount ?? 0,
+    totalCount: recipe.totalCount ?? 0,
+    matchPercent: recipe.matchPercent ?? 0,
   };
 }
 

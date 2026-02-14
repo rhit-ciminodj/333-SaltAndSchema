@@ -1,12 +1,16 @@
 package com.example.backend.service;
 
+import com.example.backend.dto.RecipeMatchRequest;
 import com.example.backend.entity.Recipe;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import javax.sql.DataSource;
+import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
+import java.util.stream.Collectors;
 
 @Service
 public class RecipeService {
@@ -87,5 +91,39 @@ public class RecipeService {
                              String description, Short timeToCook, String instructionSet) {
         jdbcTemplate.update("EXEC updateRecipe @recipeID=?, @newServingSize=?, @newTypeOfDish=?, @newCalories=?, @newDescription=?, @newTimeToCook=?, @newInstructionSet=?",
             recipeId, servingSize, typeOfDish, calories, description, timeToCook, instructionSet);
+    }
+
+    public List<RecipeMatchRequest> getMatchRecipe(List<String> ingredientNames) {
+        List<String> normalized = ingredientNames == null ? Collections.emptyList() : ingredientNames.stream()
+            .filter(name -> name != null && !name.trim().isEmpty())
+            .map(name -> name.trim().toLowerCase(Locale.ROOT))
+            .distinct()
+            .collect(Collectors.toList());
+
+        if (normalized.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        String ingredientList = String.join(",", normalized);
+        return jdbcTemplate.query("EXEC getRecipeMatchesByIngredients @IngredientNames=?", (rs, rowNum) -> {
+            RecipeMatchRequest match = new RecipeMatchRequest();
+            match.setRecipeId(rs.getInt("RecipeID"));
+            match.setName(rs.getString("Name"));
+            match.setServingSize(rs.getShort("ServingSize"));
+            match.setUserAuthorId(rs.getInt("UserAuthorID"));
+            match.setRestaurantAuthorId(rs.getInt("RestaurantAuthorId"));
+            match.setTypeOfDish(rs.getString("TypeOfDish"));
+            match.setCalories(rs.getShort("Calories"));
+            match.setDescription(rs.getString("Description"));
+            match.setTimeToCook(rs.getShort("TimeToCook"));
+            match.setInstructionSet(rs.getString("InstructionSet"));
+
+            int matched = rs.getInt("MatchedCount");
+            int total = rs.getInt("TotalCount");
+            match.setMatchedCount(matched);
+            match.setTotalCount(total);
+            match.setMatchPercent(rs.getDouble("MatchPercent"));
+            return match;
+        }, ingredientList);
     }
 }
