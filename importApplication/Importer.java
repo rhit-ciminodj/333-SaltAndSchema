@@ -122,12 +122,13 @@ public class Importer {
             String dishName = dish.get( "dish_name").getAsString();
             int servings = dish.get("serves").getAsInt();
             String author = dish.get("creator_username").getAsString();
+            String RestName = dish.get("restaurant_name").getAsString();
             String type = dish.get("category").getAsString();
             int calorie = dish.get("calorie_count").getAsInt();
             String summary = dish.get("summary").getAsString();
             int minutes = dish.get("cook_minutes").getAsInt();
             String steps = dish.get("steps").getAsString();
-            dbAdder.newRecipe(dishName, servings, author, null, type, calorie, summary, minutes, steps);
+            dbAdder.newRecipe(dishName, servings, author, RestName, type, calorie, summary, minutes, steps);
             System.out.println("Added recipe: " + dishName);
         }
     }
