@@ -346,9 +346,13 @@ public class AddtoDatabase {
 			stmt.setInt(3, ServingSize);
 			if(UserAuthor == null){
 				stmt.setNull(4, Types.NVARCHAR);
+			} else{
+				stmt.setString(4, UserAuthor);
 			}
 			if(RestName == null){
 				stmt.setNull(5, Types.NVARCHAR);
+			} else{
+				stmt.setString(5, RestName);
 			}
 			stmt.setString(6, TypeOfDish);
 			stmt.setInt(7, Calories);
@@ -504,4 +508,6 @@ public class AddtoDatabase {
 			return false;
 		}
 	}
+
+	
 }
