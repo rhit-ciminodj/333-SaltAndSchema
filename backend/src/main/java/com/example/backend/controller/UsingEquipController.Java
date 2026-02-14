@@ -9,12 +9,12 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.backend.entity.UsingIngredients;
-import com.example.backend.service.UsingIngredientsService;
+import com.example.backend.entity.UsingEquip;
+import com.example.backend.service.UsingEquipService;
 
 @RestController
-@RequestMapping("/api/UsingIngredients")
-public class UsingIngredientsController {
+@RequestMapping("/api/UsingEquipController")
+public class UsingEquipController {
 
      @Autowired
     private UsingEquipService UsingEquipService;

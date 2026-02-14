@@ -300,6 +300,51 @@ export const substitutesApi = {
   },
 };
 
+// ============= EQUIPMENT =============
+
+export const equipmentApi = {
+  // Get all equipment
+  getAll: async () => {
+    const response = await api.get('/equipment');
+    return response.data.map(normalizeEquipment);
+  },
+
+  // Get equipment by ID
+  getById: async (id) => {
+    const response = await api.get(`/equipment/${id}`);
+    return normalizeEquipment(response.data);
+  },
+
+  // Create new equipment
+  create: async (equipment) => {
+    const response = await api.post('/equipment', {
+      name: equipment.name,
+      description: equipment.description,
+    });
+    return response.data;
+  },
+};
+
+// ============= USING INGREDIENTS (Recipe-Ingredient Link) =============
+
+export const usingIngredientsApi = {
+  // Add an ingredient to a recipe
+  addToRecipe: async (ingredientId, recipeId, amount) => {
+    const response = await api.post(`/UsingIngredients/${ingredientId}/${recipeId}/${amount}`);
+    return response.data;
+  },
+};
+
+// ============= USING EQUIPMENT (Recipe-Equipment Link) =============
+
+export const usingEquipApi = {
+  // Add equipment to a recipe
+  addToRecipe: async (recipeId, equipId) => {
+    const response = await api.post(`/UsingEquipController/${recipeId}/${equipId}`);
+    return response.data;
+  },
+};
+
 // ============= RESTAURANT OWNERS =============
 
 export const restaurantOwnersApi = {
@@ -426,6 +471,15 @@ function normalizeStore(store) {
     storeID: store.groceryStoreId,
     name: store.name,
     address: store.address,
+  };
+}
+
+function normalizeEquipment(equipment) {
+  if (!equipment) return null;
+  return {
+    equipID: equipment.equipId,
+    name: equipment.name,
+    description: equipment.description,
   };
 }
 

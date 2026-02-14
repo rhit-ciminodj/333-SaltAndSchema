@@ -14,7 +14,7 @@ import {
   Utensils
 } from 'lucide-react';
 import { Card, CardBody, CardHeader, Badge, Button, Input } from '../components/ui';
-import { recipeApi, hasEatenApi, authUtils, bestPairsWithApi } from '../services/api';
+import { recipeApi, hasEatenApi, authUtils, bestPairsWithApi, ingredientApi, equipmentApi, usingIngredientsApi, usingEquipApi } from '../services/api';
 import { useState, useEffect } from 'react';
 
 export function RecipeDetailPage() {
@@ -35,6 +35,19 @@ export function RecipeDetailPage() {
   const [selectedSideRecipe, setSelectedSideRecipe] = useState('');
   const [addPairLoading, setAddPairLoading] = useState(false);
   const [addPairMessage, setAddPairMessage] = useState('');
+  
+  // Ingredient state
+  const [allIngredients, setAllIngredients] = useState([]);
+  const [selectedIngredient, setSelectedIngredient] = useState('');
+  const [ingredientAmount, setIngredientAmount] = useState(1);
+  const [addIngredientLoading, setAddIngredientLoading] = useState(false);
+  const [addIngredientMessage, setAddIngredientMessage] = useState('');
+  
+  // Equipment state
+  const [allEquipment, setAllEquipment] = useState([]);
+  const [selectedEquipment, setSelectedEquipment] = useState('');
+  const [addEquipmentLoading, setAddEquipmentLoading] = useState(false);
+  const [addEquipmentMessage, setAddEquipmentMessage] = useState('');
   
   const user = authUtils.getUser();
 
@@ -75,6 +88,14 @@ export function RecipeDetailPage() {
       // Load all recipes for the add-pair dropdown
       const recipes = await recipeApi.getAll();
       setAllRecipes(recipes.filter(r => r.recipeID !== parseInt(id)));
+      
+      // Load all ingredients for the add-ingredient dropdown
+      const ingredients = await ingredientApi.getAll();
+      setAllIngredients(ingredients);
+      
+      // Load all equipment for the add-equipment dropdown
+      const equipment = await equipmentApi.getAll();
+      setAllEquipment(equipment);
       
       setError('');
     } catch (err) {
@@ -122,6 +143,47 @@ export function RecipeDetailPage() {
       setAddPairMessage(err.response?.data || 'Failed to add pairing');
     } finally {
       setAddPairLoading(false);
+    }
+  };
+
+  const handleAddIngredient = async () => {
+    if (!selectedIngredient) {
+      setAddIngredientMessage('Please select an ingredient');
+      return;
+    }
+    if (ingredientAmount < 1) {
+      setAddIngredientMessage('Amount must be at least 1');
+      return;
+    }
+    setAddIngredientLoading(true);
+    setAddIngredientMessage('');
+    try {
+      await usingIngredientsApi.addToRecipe(parseInt(selectedIngredient), parseInt(id), ingredientAmount);
+      setAddIngredientMessage('Ingredient added successfully!');
+      setSelectedIngredient('');
+      setIngredientAmount(1);
+    } catch (err) {
+      setAddIngredientMessage(err.response?.data || 'Failed to add ingredient');
+    } finally {
+      setAddIngredientLoading(false);
+    }
+  };
+
+  const handleAddEquipment = async () => {
+    if (!selectedEquipment) {
+      setAddEquipmentMessage('Please select equipment');
+      return;
+    }
+    setAddEquipmentLoading(true);
+    setAddEquipmentMessage('');
+    try {
+      await usingEquipApi.addToRecipe(parseInt(id), parseInt(selectedEquipment));
+      setAddEquipmentMessage('Equipment added successfully!');
+      setSelectedEquipment('');
+    } catch (err) {
+      setAddEquipmentMessage(err.response?.data || 'Failed to add equipment');
+    } finally {
+      setAddEquipmentLoading(false);
     }
   };
 
@@ -358,6 +420,93 @@ export function RecipeDetailPage() {
                 {addPairMessage && (
                   <p className={`mt-2 text-sm ${addPairMessage.includes('success') ? 'text-emerald-400' : 'text-red-400'}`}>
                     {addPairMessage}
+                  </p>
+                )}
+              </div>
+            </CardBody>
+          </Card>
+
+          {/* Add Ingredient to Recipe */}
+          <Card hover={false}>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Plus className="w-5 h-5 text-emerald-400" />
+                <h2 className="text-xl font-semibold text-white">Add Ingredient</h2>
+              </div>
+            </CardHeader>
+            <CardBody>
+              <div className="space-y-3">
+                <select
+                  value={selectedIngredient}
+                  onChange={(e) => setSelectedIngredient(e.target.value)}
+                  className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  <option value="">Select an ingredient...</option>
+                  {allIngredients.map((ing) => (
+                    <option key={ing.ingredientsID} value={ing.ingredientsID}>
+                      {ing.name}
+                    </option>
+                  ))}
+                </select>
+                <div className="flex gap-3">
+                  <input
+                    type="number"
+                    min="1"
+                    value={ingredientAmount}
+                    onChange={(e) => setIngredientAmount(parseInt(e.target.value) || 1)}
+                    placeholder="Amount"
+                    className="flex-1 px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                  <Button
+                    onClick={handleAddIngredient}
+                    disabled={addIngredientLoading || !selectedIngredient}
+                  >
+                    <Plus className="w-4 h-4" />
+                    {addIngredientLoading ? 'Adding...' : 'Add'}
+                  </Button>
+                </div>
+                {addIngredientMessage && (
+                  <p className={`text-sm ${addIngredientMessage.includes('success') ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {addIngredientMessage}
+                  </p>
+                )}
+              </div>
+            </CardBody>
+          </Card>
+
+          {/* Add Equipment to Recipe */}
+          <Card hover={false}>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <ChefHat className="w-5 h-5 text-blue-400" />
+                <h2 className="text-xl font-semibold text-white">Add Equipment</h2>
+              </div>
+            </CardHeader>
+            <CardBody>
+              <div className="space-y-3">
+                <select
+                  value={selectedEquipment}
+                  onChange={(e) => setSelectedEquipment(e.target.value)}
+                  className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select equipment...</option>
+                  {allEquipment.map((equip) => (
+                    <option key={equip.equipID} value={equip.equipID}>
+                      {equip.name}
+                    </option>
+                  ))}
+                </select>
+                <Button
+                  onClick={handleAddEquipment}
+                  disabled={addEquipmentLoading || !selectedEquipment}
+                  className="w-full"
+                >
+                  <Plus className="w-4 h-4" />
+                  {addEquipmentLoading ? 'Adding...' : 'Add Equipment'}
+                </Button>
+                {addEquipmentMessage && (
+                  <p className={`text-sm ${addEquipmentMessage.includes('success') ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {addEquipmentMessage}
                   </p>
                 )}
               </div>
