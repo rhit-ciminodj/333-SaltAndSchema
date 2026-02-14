@@ -1239,6 +1239,42 @@ IF NOT EXISTS(SELECT 1 FROM Recipe WHERE RecipeID = @RecipeID)
 	INSERT INTO UsingEquip(RecipeID, EquipmentID) VALUES (@RecipeID, @EquipID)
 END
 GO
+CREATE OR ALTER PROCEDURE getUsingEquip(
+	@RecipeID int
+)
+AS
+BEGIN
+	IF(@RecipeID is null)
+	BEGIN;
+		THROW 55000, 'Null Input', 1
+	END
+
+	IF NOT EXISTS(SELECT * FROM UsingEquip WHERE @RecipeID = RecipeID)
+	BEGIN;
+		THROW 55001, 'Recipe does not exist', 1
+	END
+
+	SELECT * FROM UsingEquip WHERE @RecipeID = RecipeID
+END
+GO
+CREATE OR ALTER PROCEDURE getUsingEquip(
+	@RecipeID int
+)
+AS
+BEGIN
+	IF(@RecipeID is null)
+	BEGIN;
+		THROW 55000, 'Null Input', 1
+	END
+
+	IF NOT EXISTS(SELECT * FROM UsingEquip WHERE @RecipeID = RecipeID)
+	BEGIN;
+		THROW 55001, 'Recipe does not exist', 1
+	END
+
+	SELECT * FROM UsingEquip WHERE @RecipeID = RecipeID
+END
+GO
 CREATE OR ALTER PROCEDURE assignRestaurantToOwner
 (
     @UserID int,
