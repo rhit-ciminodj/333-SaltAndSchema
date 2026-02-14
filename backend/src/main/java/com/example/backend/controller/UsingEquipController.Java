@@ -19,6 +19,11 @@ public class UsingEquipController {
      @Autowired
     private UsingEquipService UsingEquipService;
 
+    @GetMapping("/{RecipeID}")
+    public List<UsingEquip> getUsingEquip(@PathVariable Long RecipeID) {
+        return this.UsingEquipService.getUsingEquip(RecipeID);
+    }
+
     @PostMapping("/{RecipeID}/{EquipID}")
     public void AddUsingEquip(@PathVariable Long RecipeID, @PathVariable Long EquipID) {
         this.UsingEquipService.AddUsingEquip(RecipeID, EquipID);

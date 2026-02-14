@@ -19,6 +19,11 @@ public class UsingIngredientsController {
      @Autowired
     private UsingIngredientsService UsingIngredientsService;
 
+     @GetMapping("/{RecipeID}")
+    public List<UsingIngredients> getUsingIngredients(@PathVariable Long RecipeID) {
+        return this.UsingIngredientsService.getUsingIngredients(RecipeID);
+    }
+
     @PostMapping("/{IngredientID}/{RecipeID}/{Amount}")
     public void newSubstitutes(@PathVariable Long IngredientID, @PathVariable Long RecipeID, @PathVariable Long Amount) {
         this.UsingIngredientsService.AddUsingIngredients(IngredientID, RecipeID, Amount);
