@@ -49,6 +49,10 @@ export function RecipeDetailPage() {
   const [addEquipmentLoading, setAddEquipmentLoading] = useState(false);
   const [addEquipmentMessage, setAddEquipmentMessage] = useState('');
   
+  // Recipe's current ingredients and equipment
+  const [recipeIngredients, setRecipeIngredients] = useState([]);
+  const [recipeEquipment, setRecipeEquipment] = useState([]);
+  
   const user = authUtils.getUser();
 
   useEffect(() => {
@@ -97,6 +101,10 @@ export function RecipeDetailPage() {
       const equipment = await equipmentApi.getAll();
       setAllEquipment(equipment);
       
+      // Load recipe's current ingredients and equipment
+      await loadRecipeIngredients();
+      await loadRecipeEquipment();
+      
       setError('');
     } catch (err) {
       setError('Recipe not found');
@@ -124,6 +132,48 @@ export function RecipeDetailPage() {
     } catch (err) {
       console.error('Failed to load best pairs:', err);
       setBestPairs([]);
+    }
+  };
+
+  const loadRecipeIngredients = async () => {
+    try {
+      const ingredients = await usingIngredientsApi.getByRecipe(parseInt(id));
+      // Fetch ingredient details for each
+      const ingredientsWithDetails = await Promise.all(
+        ingredients.map(async (ing) => {
+          try {
+            const ingredientDetails = await ingredientApi.getById(ing.ingredientID);
+            return { ...ing, ingredient: ingredientDetails };
+          } catch {
+            return { ...ing, ingredient: null };
+          }
+        })
+      );
+      setRecipeIngredients(ingredientsWithDetails);
+    } catch (err) {
+      console.error('Failed to load recipe ingredients:', err);
+      setRecipeIngredients([]);
+    }
+  };
+
+  const loadRecipeEquipment = async () => {
+    try {
+      const equipment = await usingEquipApi.getByRecipe(parseInt(id));
+      // Fetch equipment details for each
+      const equipmentWithDetails = await Promise.all(
+        equipment.map(async (equip) => {
+          try {
+            const equipmentDetails = await equipmentApi.getById(equip.equipmentID);
+            return { ...equip, equipment: equipmentDetails };
+          } catch {
+            return { ...equip, equipment: null };
+          }
+        })
+      );
+      setRecipeEquipment(equipmentWithDetails);
+    } catch (err) {
+      console.error('Failed to load recipe equipment:', err);
+      setRecipeEquipment([]);
     }
   };
 
@@ -162,8 +212,10 @@ export function RecipeDetailPage() {
       setAddIngredientMessage('Ingredient added successfully!');
       setSelectedIngredient('');
       setIngredientAmount(1);
+      await loadRecipeIngredients();
     } catch (err) {
-      setAddIngredientMessage(err.response?.data || 'Failed to add ingredient');
+      const errMsg = err.response?.data;
+      setAddIngredientMessage(typeof errMsg === 'object' ? (errMsg.message || errMsg.error || JSON.stringify(errMsg)) : (errMsg || 'Failed to add ingredient'));
     } finally {
       setAddIngredientLoading(false);
     }
@@ -180,8 +232,10 @@ export function RecipeDetailPage() {
       await usingEquipApi.addToRecipe(parseInt(id), parseInt(selectedEquipment));
       setAddEquipmentMessage('Equipment added successfully!');
       setSelectedEquipment('');
+      await loadRecipeEquipment();
     } catch (err) {
-      setAddEquipmentMessage(err.response?.data || 'Failed to add equipment');
+      const errMsg = err.response?.data;
+      setAddEquipmentMessage(typeof errMsg === 'object' ? (errMsg.message || errMsg.error || JSON.stringify(errMsg)) : (errMsg || 'Failed to add equipment'));
     } finally {
       setAddEquipmentLoading(false);
     }
@@ -426,89 +480,124 @@ export function RecipeDetailPage() {
             </CardBody>
           </Card>
 
-          {/* Add Ingredient to Recipe */}
+          {/* Recipe Ingredients */}
           <Card hover={false}>
             <CardHeader>
               <div className="flex items-center gap-2">
                 <Plus className="w-5 h-5 text-emerald-400" />
-                <h2 className="text-xl font-semibold text-white">Add Ingredient</h2>
+                <h2 className="text-xl font-semibold text-white">Ingredients</h2>
               </div>
             </CardHeader>
             <CardBody>
-              <div className="space-y-3">
-                <select
-                  value={selectedIngredient}
-                  onChange={(e) => setSelectedIngredient(e.target.value)}
-                  className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                >
-                  <option value="">Select an ingredient...</option>
-                  {allIngredients.map((ing) => (
-                    <option key={ing.ingredientsID} value={ing.ingredientsID}>
-                      {ing.name}
-                    </option>
+              {/* Current Ingredients List */}
+              {recipeIngredients.length > 0 ? (
+                <div className="space-y-2 mb-4">
+                  {recipeIngredients.map((ing, index) => (
+                    <div key={index} className="flex justify-between items-center p-2 bg-zinc-800 rounded-lg">
+                      <span className="text-white">{ing.ingredient?.name || `Ingredient #${ing.ingredientID}`}</span>
+                      <Badge variant="success">Qty: {ing.quantity}</Badge>
+                    </div>
                   ))}
-                </select>
-                <div className="flex gap-3">
-                  <input
-                    type="number"
-                    min="1"
-                    value={ingredientAmount}
-                    onChange={(e) => setIngredientAmount(parseInt(e.target.value) || 1)}
-                    placeholder="Amount"
-                    className="flex-1 px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  />
-                  <Button
-                    onClick={handleAddIngredient}
-                    disabled={addIngredientLoading || !selectedIngredient}
-                  >
-                    <Plus className="w-4 h-4" />
-                    {addIngredientLoading ? 'Adding...' : 'Add'}
-                  </Button>
                 </div>
-                {addIngredientMessage && (
-                  <p className={`text-sm ${addIngredientMessage.includes('success') ? 'text-emerald-400' : 'text-red-400'}`}>
-                    {addIngredientMessage}
-                  </p>
-                )}
+              ) : (
+                <p className="text-zinc-500 mb-4">No ingredients added yet.</p>
+              )}
+              
+              {/* Add New Ingredient */}
+              <div className="border-t border-zinc-700 pt-4">
+                <h3 className="text-sm font-medium text-zinc-400 mb-3">Add Ingredient</h3>
+                <div className="space-y-3">
+                  <select
+                    value={selectedIngredient}
+                    onChange={(e) => setSelectedIngredient(e.target.value)}
+                    className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  >
+                    <option value="">Select an ingredient...</option>
+                    {allIngredients.map((ing) => (
+                      <option key={ing.ingredientsID} value={ing.ingredientsID}>
+                        {ing.name}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="flex gap-3">
+                    <input
+                      type="number"
+                      min="1"
+                      value={ingredientAmount}
+                      onChange={(e) => setIngredientAmount(parseInt(e.target.value) || 1)}
+                      placeholder="Amount"
+                      className="flex-1 px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    />
+                    <Button
+                      onClick={handleAddIngredient}
+                      disabled={addIngredientLoading || !selectedIngredient}
+                    >
+                      <Plus className="w-4 h-4" />
+                      {addIngredientLoading ? 'Adding...' : 'Add'}
+                    </Button>
+                  </div>
+                  {addIngredientMessage && (
+                    <p className={`text-sm ${String(addIngredientMessage).includes('success') ? 'text-emerald-400' : 'text-red-400'}`}>
+                      {String(addIngredientMessage)}
+                    </p>
+                  )}
+                </div>
               </div>
             </CardBody>
           </Card>
 
-          {/* Add Equipment to Recipe */}
+          {/* Recipe Equipment */}
           <Card hover={false}>
             <CardHeader>
               <div className="flex items-center gap-2">
                 <ChefHat className="w-5 h-5 text-blue-400" />
-                <h2 className="text-xl font-semibold text-white">Add Equipment</h2>
+                <h2 className="text-xl font-semibold text-white">Equipment</h2>
               </div>
             </CardHeader>
             <CardBody>
-              <div className="space-y-3">
-                <select
-                  value={selectedEquipment}
-                  onChange={(e) => setSelectedEquipment(e.target.value)}
-                  className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Select equipment...</option>
-                  {allEquipment.map((equip) => (
-                    <option key={equip.equipID} value={equip.equipID}>
-                      {equip.name}
-                    </option>
+              {/* Current Equipment List */}
+              {recipeEquipment.length > 0 ? (
+                <div className="space-y-2 mb-4">
+                  {recipeEquipment.map((equip, index) => (
+                    <div key={index} className="p-2 bg-zinc-800 rounded-lg">
+                      <span className="text-white">{equip.equipment?.name || `Equipment #${equip.equipmentID}`}</span>
+                    </div>
                   ))}
-                </select>
-                <Button
-                  onClick={handleAddEquipment}
-                  disabled={addEquipmentLoading || !selectedEquipment}
-                  className="w-full"
-                >
-                  <Plus className="w-4 h-4" />
-                  {addEquipmentLoading ? 'Adding...' : 'Add Equipment'}
-                </Button>
-                {addEquipmentMessage && (
-                  <p className={`text-sm ${addEquipmentMessage.includes('success') ? 'text-emerald-400' : 'text-red-400'}`}>
-                    {addEquipmentMessage}
-                  </p>
-                )}
+                </div>
+              ) : (
+                <p className="text-zinc-500 mb-4">No equipment added yet.</p>
+              )}
+              
+              {/* Add New Equipment */}
+              <div className="border-t border-zinc-700 pt-4">
+                <h3 className="text-sm font-medium text-zinc-400 mb-3">Add Equipment</h3>
+                <div className="space-y-3">
+                  <select
+                    value={selectedEquipment}
+                    onChange={(e) => setSelectedEquipment(e.target.value)}
+                    className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select equipment...</option>
+                    {allEquipment.map((equip) => (
+                      <option key={equip.equipID} value={equip.equipID}>
+                        {equip.name}
+                      </option>
+                    ))}
+                  </select>
+                  <Button
+                    onClick={handleAddEquipment}
+                    disabled={addEquipmentLoading || !selectedEquipment}
+                    className="w-full"
+                  >
+                    <Plus className="w-4 h-4" />
+                    {addEquipmentLoading ? 'Adding...' : 'Add Equipment'}
+                  </Button>
+                  {addEquipmentMessage && (
+                    <p className={`text-sm ${String(addEquipmentMessage).includes('success') ? 'text-emerald-400' : 'text-red-400'}`}>
+                      {String(addEquipmentMessage)}
+                    </p>
+                  )}
+                </div>
               </div>
             </CardBody>
           </Card>

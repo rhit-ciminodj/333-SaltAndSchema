@@ -328,6 +328,12 @@ export const equipmentApi = {
 // ============= USING INGREDIENTS (Recipe-Ingredient Link) =============
 
 export const usingIngredientsApi = {
+  // Get ingredients for a recipe
+  getByRecipe: async (recipeId) => {
+    const response = await api.get(`/UsingIngredients/${recipeId}`);
+    return response.data.map(normalizeUsingIngredients);
+  },
+
   // Add an ingredient to a recipe
   addToRecipe: async (ingredientId, recipeId, amount) => {
     const response = await api.post(`/UsingIngredients/${ingredientId}/${recipeId}/${amount}`);
@@ -338,6 +344,12 @@ export const usingIngredientsApi = {
 // ============= USING EQUIPMENT (Recipe-Equipment Link) =============
 
 export const usingEquipApi = {
+  // Get equipment for a recipe
+  getByRecipe: async (recipeId) => {
+    const response = await api.get(`/UsingEquipController/${recipeId}`);
+    return response.data.map(normalizeUsingEquip);
+  },
+
   // Add equipment to a recipe
   addToRecipe: async (recipeId, equipId) => {
     const response = await api.post(`/UsingEquipController/${recipeId}/${equipId}`);
@@ -477,7 +489,7 @@ function normalizeStore(store) {
 function normalizeEquipment(equipment) {
   if (!equipment) return null;
   return {
-    equipID: equipment.equipId,
+    equipID: equipment.equipmentId,
     name: equipment.name,
     description: equipment.description,
   };
@@ -515,6 +527,23 @@ function normalizeSubstitutes(substitute) {
   return {
     ingredientID: substitute.id?.ingredientId,
     substituteID: substitute.id?.substituteId,
+  };
+}
+
+function normalizeUsingIngredients(usingIngredient) {
+  if (!usingIngredient) return null;
+  return {
+    ingredientID: usingIngredient.id?.ingredientId,
+    recipeID: usingIngredient.id?.recipeId,
+    quantity: usingIngredient.quantity,
+  };
+}
+
+function normalizeUsingEquip(usingEquip) {
+  if (!usingEquip) return null;
+  return {
+    recipeID: usingEquip.id?.recipeId,
+    equipmentID: usingEquip.id?.equipmentId,
   };
 }
 

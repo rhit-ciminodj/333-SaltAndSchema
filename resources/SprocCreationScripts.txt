@@ -363,3 +363,34 @@ BEGIN
 	INSERT INTO UserAuth (UserID, PasswordHash, Salt)
 	VALUES (@newUserID, @PasswordHash, @Salt)
 END
+GO
+CREATE OR ALTER PROCEDURE AddUsingIngredient
+(
+	@IngredientID int,
+	@RecipeID int,
+	@Amount smallint
+)
+AS
+BEGIN
+	IF(@IngredientID IS NULL OR @RecipeID IS NULL OR @Amount IS NULL)
+	BEGIN;
+		THROW 51030, 'Null Input', 1
+		RETURN
+	END
+	IF NOT EXISTS(SELECT 1 FROM Ingredients WHERE IngredientsID = @IngredientID)
+	BEGIN;
+		THROW 51031, 'Ingredient does not exist', 1
+		RETURN
+	END
+	IF NOT EXISTS(SELECT 1 FROM Recipe WHERE RecipeID = @RecipeID)
+	BEGIN;
+		THROW 51032, 'Recipe does not exist', 1
+		RETURN
+	END
+	IF EXISTS(SELECT 1 FROM UsingIngredients WHERE IngredientID = @IngredientID AND RecipeID = @RecipeID)
+	BEGIN;
+		THROW 51033, 'Ingredient already added to this recipe', 1
+		RETURN
+	END
+	INSERT INTO UsingIngredients(IngredientID, RecipeID, Quantity) VALUES (@IngredientID, @RecipeID, @Amount)
+END

@@ -22,7 +22,7 @@ public class UsingIngredientsService {
     }
 
     public void AddUsingIngredients(long IngredientID, long RecipeId, long amount){
-        jdbcTemplate.update("EXEC AddUsingIngredients @IngredientID=?, @RecipeID=?, @Amount=?", IngredientID, RecipeId, amount);
+        jdbcTemplate.update("EXEC AddUsingIngredient @IngredientID=?, @RecipeID=?, @Amount=?", IngredientID, RecipeId, amount);
     }
 
     public List<UsingIngredients> getUsingIngredients(Long RecipeID) {
