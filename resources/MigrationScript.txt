@@ -946,46 +946,6 @@ BEGIN
     SELECT AVG(CAST(Stars AS FLOAT)) AS AvgStars FROM HasEaten WHERE RecipeID = @RecipeID
 END
 GO
-CREATE OR ALTER PROCEDURE getRecipeMatchesByIngredients
-(
-	@IngredientNames nvarchar(max)
-)
-AS
-BEGIN
-	IF (@IngredientNames IS NULL OR @IngredientNames = '')
-	BEGIN;
-		THROW 51150, 'Null Input', 1
-		RETURN
-	END
-
-	;WITH input AS (
-		SELECT DISTINCT LOWER(value) AS [Name]
-		FROM STRING_SPLIT(@IngredientNames, ',')
-		WHERE value <> ''
-	),
-	recipe_totals AS (
-		SELECT ui.RecipeID, COUNT(DISTINCT ui.IngredientID) AS TotalCount
-		FROM UsingIngredients ui
-		GROUP BY ui.RecipeID
-	),
-	matched AS (
-		SELECT ui.RecipeID, COUNT(DISTINCT ui.IngredientID) AS MatchedCount
-		FROM UsingIngredients ui
-		JOIN Ingredients i ON i.IngredientsID = ui.IngredientID
-		JOIN input ii ON LOWER(i.[Name]) = ii.[Name]
-		GROUP BY ui.RecipeID
-	)
-	SELECT r.RecipeID, r.[Name], r.ServingSize, r.UserAuthorID, r.RestaurantAuthorId,
-		   r.TypeOfDish, r.Calories, r.[Description], r.TimeToCook, r.InstructionSet,
-		   COALESCE(m.MatchedCount, 0) AS MatchedCount,
-		   t.TotalCount AS TotalCount,
-		   CAST(COALESCE(m.MatchedCount, 0) AS FLOAT) / NULLIF(t.TotalCount, 0) * 100 AS MatchPercent
-	FROM Recipe r
-	JOIN recipe_totals t ON t.RecipeID = r.RecipeID
-	LEFT JOIN matched m ON m.RecipeID = r.RecipeID
-	ORDER BY CAST(COALESCE(m.MatchedCount, 0) AS FLOAT) / NULLIF(t.TotalCount, 0) DESC, r.[Name]
-END
-GO
 CREATE OR ALTER PROCEDURE getAllEquipment
 AS
 BEGIN
@@ -1228,6 +1188,55 @@ BEGIN
 	FROM GroceryStoreOwners gso
 	JOIN GroceryStores g ON g.StoreID = gso.StoreID
 	WHERE gso.UserID = @UserID
+END
+GO
+CREATE OR ALTER PROCEDURE AddUsingIngredient(
+	@IngredientID int,
+	@RecipeID int,
+	@Amount int = 0
+)
+AS
+BEGIN
+IF(@IngredientID IS NULL OR @RecipeID IS NULL)
+	BEGIN;
+		THROW 51021, 'Null Input', 1
+		RETURN
+	END
+IF NOT EXISTS(SELECT 1 FROM Ingredients WHERE IngredientsID = @IngredientID)
+	BEGIN;
+		THROW 51023, 'Ingredient does not exist', 1
+	END
+IF NOT EXISTS(SELECT 1 FROM Recipe WHERE RecipeID = @RecipeID)
+	BEGIN;
+		THROW 51023, 'Recipe does not exist', 1
+	END
+IF(@Amount = 0)
+	BEGIN;
+		THROW 51022, 'No Ingredients', 1
+	END
+	INSERT INTO UsingIngredients(IngredientID, RecipeID, Quantity) VALUES (@IngredientID, @RecipeID, @Amount)
+END
+GO
+CREATE OR ALTER PROCEDURE AddUsingEquip(
+	@RecipeID int,
+	@EquipID int
+)
+AS
+BEGIN
+IF(@EquipID IS NULL OR @RecipeID IS NULL)
+	BEGIN;
+		THROW 51021, 'Null Input', 1
+		RETURN
+	END
+IF NOT EXISTS(SELECT 1 FROM Equipment WHERE EquipID = @EquipID)
+	BEGIN;
+		THROW 51023, 'Equipment does not exist', 1
+	END
+IF NOT EXISTS(SELECT 1 FROM Recipe WHERE RecipeID = @RecipeID)
+	BEGIN;
+		THROW 51023, 'Recipe does not exist', 1
+	END
+	INSERT INTO UsingEquip(RecipeID, EquipmentID) VALUES (@RecipeID, @EquipID)
 END
 GO
 CREATE OR ALTER PROCEDURE assignRestaurantToOwner
