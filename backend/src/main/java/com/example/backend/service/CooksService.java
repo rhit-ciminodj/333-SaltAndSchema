@@ -22,7 +22,7 @@ public class CooksService {
     }
 
     public void addRecipeToRestaurant(Long RecipeID, Long RestaurantID, Double Price) {
-        jdbcTemplate.update("EXEC linkRecipeToRestaurant @RestID=?, @RecipeID=?, @Cost=?", RecipeID, RestaurantID, Price);
+        jdbcTemplate.update("EXEC linkRecipeToRestaurant @RestID=?, @RecipeID=?, @Cost=?", RestaurantID, RecipeID, Price);
     }
 
     public List<Cooks> getRecipesByRestaurant(Long RestaurantID) {
@@ -30,7 +30,7 @@ public class CooksService {
             Cooks cook = new Cooks();
             CooksId id = new CooksId(rs.getInt("RestaurantID"), rs.getInt("RecipeID"));
             cook.setId(id);
-            cook.setCostOfItem(rs.getBigDecimal("Cost"));   
+            cook.setCostOfItem(rs.getBigDecimal("CostOfItem"));   
             return cook;
         }, RestaurantID);
     }

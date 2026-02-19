@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { ChefHat, Clock, Flame, Users, Filter, Plus, Sparkles } from 'lucide-react';
+import { ChefHat, Clock, Flame, Users, Filter, Plus, Sparkles, Star } from 'lucide-react';
 import { Card, CardBody, Badge, StarRating, SearchInput, Select, Button, Input } from '../components/ui';
-import { recipeApi, authUtils } from '../services/api';
+import { recipeApi, cuisineApi, typeOfApi, authUtils } from '../services/api';
 
 export function RecipesPage() {
   const [recipes, setRecipes] = useState([]);
@@ -10,6 +10,7 @@ export function RecipesPage() {
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState('all');
+  const [selectedCuisine, setSelectedCuisine] = useState('all');
   const [sortBy, setSortBy] = useState('name');
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newRecipe, setNewRecipe] = useState({
@@ -27,9 +28,13 @@ export function RecipesPage() {
   const [matchError, setMatchError] = useState('');
   const [createLoading, setCreateLoading] = useState(false);
   const [createError, setCreateError] = useState('');
+  const [cuisines, setCuisines] = useState([]);
+  const [recipeCuisines, setRecipeCuisines] = useState({});
+  const [recipeRatings, setRecipeRatings] = useState({});
 
   useEffect(() => {
     loadRecipes();
+    loadCuisines();
   }, []);
 
   const loadRecipes = async () => {
@@ -38,11 +43,44 @@ export function RecipesPage() {
       const data = await recipeApi.getAll();
       setRecipes(data);
       setError('');
+      
+      // Load ratings for all recipes
+      const ratings = {};
+      for (const recipe of data) {
+        try {
+          const stars = await recipeApi.getStars(recipe.recipeID);
+          ratings[recipe.recipeID] = stars || 0;
+        } catch {
+          ratings[recipe.recipeID] = 0;
+        }
+      }
+      setRecipeRatings(ratings);
+      
+      // Load cuisines for all recipes
+      const cuisinesMap = {};
+      for (const recipe of data) {
+        try {
+          const typesOf = await typeOfApi.getByRecipe(recipe.recipeID);
+          cuisinesMap[recipe.recipeID] = typesOf.map(t => t.cuisineID);
+        } catch {
+          cuisinesMap[recipe.recipeID] = [];
+        }
+      }
+      setRecipeCuisines(cuisinesMap);
     } catch (err) {
       setError('Failed to load recipes');
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadCuisines = async () => {
+    try {
+      const data = await cuisineApi.getAll();
+      setCuisines(data);
+    } catch (err) {
+      console.error('Failed to load cuisines:', err);
     }
   };
 
@@ -65,6 +103,14 @@ export function RecipesPage() {
       filtered = filtered.filter(r => r.typeOfDish === selectedType);
     }
 
+    // Cuisine filter
+    if (selectedCuisine !== 'all') {
+      const cuisineId = parseInt(selectedCuisine);
+      filtered = filtered.filter(r => 
+        recipeCuisines[r.recipeID]?.includes(cuisineId)
+      );
+    }
+
     // Sort
     switch (sortBy) {
       case 'name':
@@ -73,23 +119,44 @@ export function RecipesPage() {
       case 'time':
         filtered.sort((a, b) => (a.timeToCook || 0) - (b.timeToCook || 0));
         break;
+      case 'time-desc':
+        filtered.sort((a, b) => (b.timeToCook || 0) - (a.timeToCook || 0));
+        break;
       case 'calories':
         filtered.sort((a, b) => (a.calories || 0) - (b.calories || 0));
+        break;
+      case 'calories-desc':
+        filtered.sort((a, b) => (b.calories || 0) - (a.calories || 0));
+        break;
+      case 'rating':
+        filtered.sort((a, b) => (recipeRatings[b.recipeID] || 0) - (recipeRatings[a.recipeID] || 0));
+        break;
+      case 'rating-asc':
+        filtered.sort((a, b) => (recipeRatings[a.recipeID] || 0) - (recipeRatings[b.recipeID] || 0));
         break;
     }
 
     return filtered;
-  }, [recipes, searchQuery, selectedType, sortBy]);
+  }, [recipes, searchQuery, selectedType, selectedCuisine, sortBy, recipeCuisines, recipeRatings]);
 
   const typeOptions = dishTypes.map(type => ({
     value: type,
     label: type === 'all' ? 'All Types' : type
   }));
 
+  const cuisineOptions = [
+    { value: 'all', label: 'All Cuisines' },
+    ...cuisines.map(c => ({ value: c.cuisineID.toString(), label: c.name }))
+  ];
+
   const sortOptions = [
-    { value: 'name', label: 'Name' },
+    { value: 'name', label: 'Name (A-Z)' },
+    { value: 'rating', label: 'Highest Rated' },
+    { value: 'rating-asc', label: 'Lowest Rated' },
     { value: 'time', label: 'Quickest' },
+    { value: 'time-desc', label: 'Longest' },
     { value: 'calories', label: 'Lowest Calories' },
+    { value: 'calories-desc', label: 'Highest Calories' },
   ];
 
   const handleCreateRecipe = async (e) => {
@@ -275,9 +342,9 @@ export function RecipesPage() {
         <CardBody>
           <div className="flex items-center gap-2 mb-4 text-zinc-400">
             <Filter className="w-5 h-5" />
-            <span className="font-medium">Filter & Search</span>
+            <span className="font-medium">Filter & Sort</span>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <SearchInput
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -287,6 +354,11 @@ export function RecipesPage() {
               value={selectedType}
               onChange={(e) => setSelectedType(e.target.value)}
               options={typeOptions}
+            />
+            <Select
+              value={selectedCuisine}
+              onChange={(e) => setSelectedCuisine(e.target.value)}
+              options={cuisineOptions}
             />
             <Select
               value={sortBy}
@@ -380,6 +452,12 @@ export function RecipesPage() {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                 <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
                   {recipe.typeOfDish && <Badge variant="primary">{recipe.typeOfDish}</Badge>}
+                  {recipeRatings[recipe.recipeID] > 0 && (
+                    <span className="flex items-center gap-1 text-amber-400 text-sm font-medium bg-black/40 px-2 py-0.5 rounded">
+                      <Star className="w-3 h-3 fill-current" />
+                      {recipeRatings[recipe.recipeID].toFixed(1)}
+                    </span>
+                  )}
                 </div>
                 <ChefHat className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 text-zinc-700 group-hover:text-amber-500/30 transition-colors" />
               </div>

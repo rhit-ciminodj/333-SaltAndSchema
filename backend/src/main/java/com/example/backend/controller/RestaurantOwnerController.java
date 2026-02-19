@@ -23,10 +23,7 @@ public class RestaurantOwnerController {
     @GetMapping("/{userID}")
     public ResponseEntity<List<RestaurantOwners>> getRestaurantOwnerByID(@PathVariable Long userID) {
         List<RestaurantOwners> restaurantOwners = restaurantOwnersService.getRestaurantOwnerByID(userID);
-        if (restaurantOwners != null && !restaurantOwners.isEmpty()) {
-            return ResponseEntity.ok(restaurantOwners);
-        }
-        return ResponseEntity.notFound().build();
+        return ResponseEntity.ok(restaurantOwners != null ? restaurantOwners : List.of());
     }
 
     @PostMapping("/assign/{userID}/{restaurantID}")

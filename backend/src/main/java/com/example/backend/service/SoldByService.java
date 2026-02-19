@@ -28,7 +28,7 @@ public class SoldByService {
     public List<SoldBy> findIngredientsByStore(Long StoreID) {
         return jdbcTemplate.query("EXEC findIngredientsByStore @StoreID=?", (rs, rowNum) -> {
             SoldBy sold = new SoldBy();
-            SoldById id = new SoldById(rs.getInt("StoreID"), rs.getInt("IngredientID"));
+            SoldById id = new SoldById(rs.getInt("IngredientID"), rs.getInt("StoreID"));
             sold.setId(id);
             sold.setPrice(rs.getBigDecimal("Price")); 
             return sold;

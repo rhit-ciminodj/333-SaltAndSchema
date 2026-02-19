@@ -169,8 +169,11 @@ export const userApi = {
   // Get user by username (fetches all and filters)
   getByUsername: async (username) => {
     const users = await userApi.getAll();
-    const normalized = username?.toLowerCase();
-    return users.find(u => u.username?.toLowerCase() === normalized) || null;
+    const normalized = username?.trim().toLowerCase();
+    // Try exact match first, then case-insensitive
+    return users.find(u => u.username === username) 
+      || users.find(u => u.username?.trim().toLowerCase() === normalized) 
+      || null;
   },
 
   // Register a new user
@@ -187,8 +190,13 @@ export const userApi = {
   login: async (username, password) => {
     // First validate credentials
     await api.post('/users/login', { username, password });
-    // If successful, fetch user data
-    const user = await userApi.getByUsername(username);
+    // If successful, fetch user data - retry a few times in case of timing issues
+    let user = null;
+    for (let i = 0; i < 3; i++) {
+      user = await userApi.getByUsername(username);
+      if (user) break;
+      await new Promise(resolve => setTimeout(resolve, 200));
+    }
     if (!user) {
       throw new Error('User record not found after login.');
     }
@@ -353,6 +361,90 @@ export const usingEquipApi = {
   // Add equipment to a recipe
   addToRecipe: async (recipeId, equipId) => {
     const response = await api.post(`/UsingEquipController/${recipeId}/${equipId}`);
+    return response.data;
+  },
+};
+
+// ============= CUISINES =============
+
+export const cuisineApi = {
+  // Get all cuisines
+  getAll: async () => {
+    const response = await api.get('/cuisines');
+    return response.data.map(normalizeCuisine);
+  },
+
+  // Get cuisine by ID
+  getById: async (id) => {
+    const response = await api.get(`/cuisines/${id}`);
+    return normalizeCuisine(response.data);
+  },
+
+  // Create a new cuisine
+  create: async (cuisine) => {
+    const response = await api.post('/cuisines', {
+      name: cuisine.name,
+      description: cuisine.description,
+    });
+    return response.data;
+  },
+};
+
+// ============= TYPE OF (Recipe-Cuisine Link) =============
+
+export const typeOfApi = {
+  // Get cuisines for a recipe
+  getByRecipe: async (recipeId) => {
+    const response = await api.get(`/type-of/recipe/${recipeId}`);
+    return response.data.map(normalizeTypeOf);
+  },
+
+  // Get recipes by cuisine
+  getByCuisine: async (cuisineId) => {
+    const response = await api.get(`/type-of/cuisine/${cuisineId}`);
+    return response.data.map(normalizeTypeOf);
+  },
+
+  // Add cuisine to recipe
+  addCuisineToRecipe: async (cuisineId, recipeId) => {
+    const response = await api.post('/type-of/add', {
+      id: { cuisineId, recipeId },
+    });
+    return response.data;
+  },
+};
+
+// ============= COOKS (Restaurant-Recipe Link) =============
+
+export const cooksApi = {
+  // Get recipes by restaurant
+  getByRestaurant: async (restaurantId) => {
+    const response = await api.get(`/cooks/restaurant/${restaurantId}`);
+    return response.data.map(normalizeCooks);
+  },
+
+  // Add recipe to restaurant with price
+  addRecipeToRestaurant: async (restaurantId, recipeId, price) => {
+    const response = await api.post(`/cooks/restaurant/${restaurantId}/recipe/${recipeId}/price/${price}`);
+    return response.data;
+  },
+};
+
+// ============= SOLD BY (Store-Ingredient Link) =============
+
+export const soldByApi = {
+  // Get ingredients by store
+  getByStore: async (storeId) => {
+    const response = await api.get(`/soldby/store/${storeId}`);
+    return response.data.map(normalizeSoldBy);
+  },
+
+  // Add ingredient to store with price
+  addIngredientToStore: async (ingredientId, storeId, price) => {
+    const response = await api.post('/soldby/add', {
+      id: { ingredientId, storeId },
+      price,
+    });
     return response.data;
   },
 };
@@ -544,6 +636,41 @@ function normalizeUsingEquip(usingEquip) {
   return {
     recipeID: usingEquip.id?.recipeId,
     equipmentID: usingEquip.id?.equipmentId,
+  };
+}
+
+function normalizeCuisine(cuisine) {
+  if (!cuisine) return null;
+  return {
+    cuisineID: cuisine.cuisineId,
+    name: cuisine.name,
+    description: cuisine.description,
+  };
+}
+
+function normalizeTypeOf(typeOf) {
+  if (!typeOf) return null;
+  return {
+    cuisineID: typeOf.id?.cuisineId,
+    recipeID: typeOf.id?.recipeId,
+  };
+}
+
+function normalizeCooks(cooks) {
+  if (!cooks) return null;
+  return {
+    restaurantID: cooks.id?.restaurantId,
+    recipeID: cooks.id?.recipeId,
+    costOfItem: cooks.costOfItem,
+  };
+}
+
+function normalizeSoldBy(soldBy) {
+  if (!soldBy) return null;
+  return {
+    ingredientID: soldBy.id?.ingredientId,
+    storeID: soldBy.id?.storeId,
+    price: soldBy.price,
   };
 }
 

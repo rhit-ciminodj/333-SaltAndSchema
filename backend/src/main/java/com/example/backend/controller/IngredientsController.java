@@ -38,10 +38,7 @@ public class IngredientsController {
     @GetMapping("/{id}/stores")
     public ResponseEntity<List<String>> getStoresSellingIngredient(@PathVariable Integer id) {
         List<String> stores = ingredientsService.getStoresSellingIngredient(id);
-        if (stores != null && !stores.isEmpty()) {
-            return ResponseEntity.ok(stores);
-        }
-        return ResponseEntity.notFound().build();
+        return ResponseEntity.ok(stores != null ? stores : List.of());
     }
 
     @PostMapping

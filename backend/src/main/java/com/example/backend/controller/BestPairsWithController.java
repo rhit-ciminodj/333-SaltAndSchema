@@ -3,6 +3,7 @@ package com.example.backend.controller;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,7 +26,16 @@ public class BestPairsWithController {
     }
 
     @PostMapping("/{MainRecipeID}/{SideRecipeID}")
-    public void addNewBestPairsWith(@PathVariable Long MainRecipeID, @PathVariable Long SideRecipeID) {
-        this.bestPairsWithService.createBestPairsWith(MainRecipeID, SideRecipeID);
+    public ResponseEntity<String> addNewBestPairsWith(@PathVariable Long MainRecipeID, @PathVariable Long SideRecipeID) {
+        try {
+            this.bestPairsWithService.createBestPairsWith(MainRecipeID, SideRecipeID);
+            return ResponseEntity.ok("Pairing added successfully");
+        } catch (Exception e) {
+            String msg = e.getMessage();
+            if (msg != null && (msg.contains("duplicate") || msg.contains("UNIQUE") || msg.contains("PRIMARY"))) {
+                return ResponseEntity.badRequest().body("This pairing already exists");
+            }
+            return ResponseEntity.badRequest().body("Error: " + msg);
+        }
     }
 }
