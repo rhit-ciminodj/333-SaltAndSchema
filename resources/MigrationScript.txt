@@ -1575,7 +1575,7 @@ BEGIN
         THROW 51002, 'User cannot own both a restaurant and grocery store.', 1
     END
 END
-GO4
+GO
 CREATE USER SaltAndSchemaUser FOR LOGIN SaltAndSchemaUser
 GO
 ALTER ROLE db_datareader ADD MEMBER SaltAndSchemaUser
