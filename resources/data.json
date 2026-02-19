@@ -90,7 +90,7 @@
     { "item_name": "Cilantro", "category": "Herb", "notes": "Fresh herb common in Mexican and Asian dishes" },
     { "item_name": "Jalapeno", "category": "Pepper", "notes": "Medium-heat green chili pepper" },
     { "item_name": "Avocado", "category": "Fruit", "notes": "Creamy fruit rich in healthy fats" },
-    { "item_name": "Cumin", "category": "Spice", "notes": "Earthy spice essential in many cuisines" },
+    { "item_name": "Cumin", "category": "Spice", "notes": "Earthy spice essential in many cuisines" }, 
     { "item_name": "Paprika", "category": "Spice", "notes": "Ground red pepper with sweet or smoky flavor" },
     { "item_name": "Cinnamon", "category": "Spice", "notes": "Warm spice from tree bark" },
     { "item_name": "Vanilla Extract", "category": "Flavoring", "notes": "Flavoring made from vanilla beans" },
