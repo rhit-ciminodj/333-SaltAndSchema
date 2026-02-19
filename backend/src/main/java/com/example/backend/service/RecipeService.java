@@ -93,6 +93,44 @@ public class RecipeService {
             recipeId, servingSize, typeOfDish, calories, description, timeToCook, instructionSet);
     }
 
+    public void getByCaloriesASC() {
+        List<Recipe> recipes = this.getAllRecipes();
+        recipes.sort((r1, r2) -> Short.compare(r1.getCalories(), r2.getCalories()));
+    }
+
+    public void getByCaloriesDESC() {
+        List<Recipe> recipes = this.getAllRecipes();
+        recipes.sort((r1, r2) -> Short.compare(r2.getCalories(), r1.getCalories()));
+    }
+
+    public void getByTimeToCookASC() {
+        List<Recipe> recipes = this.getAllRecipes();
+        recipes.sort((r1, r2) -> Short.compare(r1.getTimeToCook(), r2.getTimeToCook()));
+    }
+
+    public void getByTimeToCookDESC() {
+        List<Recipe> recipes = this.getAllRecipes();
+        recipes.sort((r1, r2) -> Short.compare(r2.getTimeToCook(), r1.getTimeToCook()));
+    }
+
+    public void getByStarsASC() {
+        List<Recipe> recipes = this.getAllRecipes();
+        recipes.sort((r1, r2) -> {
+            Double stars1 = this.getRecipeStars(r1.getRecipeId());
+            Double stars2 = this.getRecipeStars(r2.getRecipeId());
+            return Double.compare(stars1 != null ? stars1 : 0.0, stars2 != null ? stars2 : 0.0);
+        });
+    }
+
+    public void getByStarsDESC() {
+        List<Recipe> recipes = this.getAllRecipes();
+        recipes.sort((r1, r2) -> {
+            Double stars1 = this.getRecipeStars(r1.getRecipeId());
+            Double stars2 = this.getRecipeStars(r2.getRecipeId());
+            return Double.compare(stars2 != null ? stars2 : 0.0, stars1 != null ? stars1 : 0.0);
+        });
+    }
+
     public List<RecipeMatchRequest> getMatchRecipe(List<String> ingredientNames) {
         List<String> normalized = ingredientNames == null ? Collections.emptyList() : ingredientNames.stream()
             .filter(name -> name != null && !name.trim().isEmpty())

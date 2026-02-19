@@ -339,6 +339,26 @@ BEGIN
 	INSERT INTO BestPairsWith (MainRecipeID, SideRecipeID) VALUES (@MainID, @SideID)
 END
 GO
+CREATE OR ALTER PROCEDURE findRecipesByRestaurant
+(
+	@RestID int
+)
+AS
+BEGIN
+	IF (@RestID IS NULL)
+	BEGIN;
+		THROW 53000, 'Null Input', 1
+		RETURN
+	END
+	IF NOT EXISTS (SELECT 1 FROM Restaurant r WHERE r.RestID = @RestID)
+	BEGIN;
+		THROW 53001, 'Input does not exist', 1
+		RETURN
+	END
+
+	SELECT * FROM Cooks c WHERE c.RestaurantID = @RestID
+END
+GO
 CREATE OR ALTER PROCEDURE linkRecipeToRestaurant
 (
 	@RestID int,
@@ -419,6 +439,26 @@ BEGIN
 	INSERT INTO SoldBy (IngredientID, StoreID, Price) VALUES (@IngredientID, @StoreID, @Price)
 END
 GO
+CREATE OR ALTER PROCEDURE findIngredientsByStore
+(
+	@StoreID int
+)
+AS
+BEGIN
+	IF (@StoreID IS NULL)
+	BEGIN;
+		THROW 53000, 'Null Input', 1
+		RETURN
+	END
+	IF NOT EXISTS (SELECT 1 FROM GroceryStores g WHERE g.StoreID = @StoreID)
+	BEGIN;
+		THROW 53001, 'Input does not exist', 1
+		RETURN
+	END
+
+	SELECT * FROM SoldBy s WHERE s.StoreID = @StoreID
+END
+GO
 CREATE OR ALTER PROCEDURE addSubstituteToIngredient
 (
 	@IngredientID int,
@@ -457,6 +497,46 @@ BEGIN
 		RETURN
 	END
 	INSERT INTO TypeOf (CuisineID, RecipeID) VALUES (@CuisineID, @RecipeID)
+END
+GO
+CREATE OR ALTER PROCEDURE findCuisineByRecipe
+(
+	@RecipeID int
+)
+AS
+BEGIN
+	IF (@RecipeID IS NULL)
+	BEGIN;
+		THROW 53010, 'Null Input', 1
+		RETURN
+	END
+	IF NOT EXISTS (SELECT 1 FROM Recipe r WHERE r.RecipeID = @RecipeID)
+	BEGIN;
+		THROW 53001, 'Input does not exist', 1
+		RETURN
+	END
+
+	SELECT * FROM TypeOf t WHERE t.RecipeID = @RecipeID
+END
+GO
+CREATE OR ALTER PROCEDURE findRecipeByCuisine
+(
+	@CuisineID int
+)
+AS
+BEGIN
+	IF (@CuisineID IS NULL)
+	BEGIN;
+		THROW 53020, 'Null Input', 1
+		RETURN
+	END
+	IF NOT EXISTS (SELECT 1 FROM Cuisine c WHERE c.CuisineID = @CuisineID)
+	BEGIN;
+		THROW 53021, 'Input does not exist', 1
+		RETURN
+	END
+
+	SELECT * FROM TypeOf t WHERE t.CuisineID = @CuisineID
 END
 GO
 CREATE OR ALTER PROCEDURE addEquipToRecipe

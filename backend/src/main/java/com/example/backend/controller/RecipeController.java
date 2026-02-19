@@ -94,4 +94,40 @@ public class RecipeController {
             return ResponseEntity.badRequest().body("Error: " + e.getMessage());
         }
     }
+
+    @GetMapping("/sort/calories/asc")
+    public List<Recipe> getByCaloriesASC() {
+        recipeService.getByCaloriesASC();
+        return recipeService.getAllRecipes();
+    }
+
+    @GetMapping("/sort/calories/desc")
+    public List<Recipe> getByCaloriesDESC() {
+        recipeService.getByCaloriesDESC();
+        return recipeService.getAllRecipes();
+    }
+
+    @GetMapping("/sort/time/asc")
+    public List<Recipe> getByTimeToCookASC() {
+        recipeService.getByTimeToCookASC();
+        return recipeService.getAllRecipes();
+    }
+
+    @GetMapping("/sort/time/desc")
+    public List<Recipe> getByTimeToCookDESC() {
+        recipeService.getByTimeToCookDESC();
+        return recipeService.getAllRecipes();
+    }
+
+    @GetMapping("/sort/stars/asc")
+    public List<Recipe> getByStarsASC() {
+        recipeService.getByStarsASC();
+        return recipeService.getAllRecipes();
+    }
+
+    @GetMapping("/sort/stars/desc")
+    public List<Recipe> getByStarsDESC() {
+        recipeService.getByStarsDESC();
+        return recipeService.getAllRecipes();
+    }
 }
