@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { ChefHat, Clock, Flame, Users, Filter, Plus, Sparkles, Star } from 'lucide-react';
+import { ChefHat, Clock, Flame, Users, Filter, Plus, Sparkles, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Card, CardBody, Badge, StarRating, SearchInput, Select, Button, Input } from '../components/ui';
 import { recipeApi, cuisineApi, typeOfApi, authUtils } from '../services/api';
 
@@ -31,6 +31,8 @@ export function RecipesPage() {
   const [cuisines, setCuisines] = useState([]);
   const [recipeCuisines, setRecipeCuisines] = useState({});
   const [recipeRatings, setRecipeRatings] = useState({});
+  const [currentPage, setCurrentPage] = useState(1);
+  const recipesPerPage = 12;
 
   useEffect(() => {
     loadRecipes();
@@ -138,6 +140,18 @@ export function RecipesPage() {
 
     return filtered;
   }, [recipes, searchQuery, selectedType, selectedCuisine, sortBy, recipeCuisines, recipeRatings]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedType, selectedCuisine, sortBy]);
+
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredRecipes.length / recipesPerPage);
+  const paginatedRecipes = useMemo(() => {
+    const startIndex = (currentPage - 1) * recipesPerPage;
+    return filteredRecipes.slice(startIndex, startIndex + recipesPerPage);
+  }, [filteredRecipes, currentPage, recipesPerPage]);
 
   const typeOptions = dishTypes.map(type => ({
     value: type,
@@ -440,12 +454,13 @@ export function RecipesPage() {
 
       {/* Results Count */}
       <div className="mb-6 text-zinc-400">
-        Showing {filteredRecipes.length} recipe{filteredRecipes.length !== 1 ? 's' : ''}
+        Showing {paginatedRecipes.length} of {filteredRecipes.length} recipe{filteredRecipes.length !== 1 ? 's' : ''}
+        {totalPages > 1 && ` (Page ${currentPage} of ${totalPages})`}
       </div>
 
       {/* Recipe Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {filteredRecipes.map((recipe) => (
+        {paginatedRecipes.map((recipe) => (
           <Link key={recipe.recipeID} to={`/recipes/${recipe.recipeID}`}>
             <Card className="h-full group">
               <div className="aspect-video bg-gradient-to-br from-zinc-800 to-zinc-900 relative overflow-hidden">
@@ -493,6 +508,62 @@ export function RecipesPage() {
           </Link>
         ))}
       </div>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="mt-8 flex items-center justify-center gap-2">
+          <Button
+            variant="secondary"
+            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+            className="flex items-center gap-1"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            Previous
+          </Button>
+          
+          <div className="flex items-center gap-1">
+            {Array.from({ length: totalPages }, (_, i) => i + 1)
+              .filter(page => {
+                // Show first, last, current, and pages near current
+                return page === 1 || 
+                       page === totalPages || 
+                       Math.abs(page - currentPage) <= 1;
+              })
+              .map((page, idx, arr) => {
+                // Add ellipsis where there are gaps
+                const showEllipsisBefore = idx > 0 && page - arr[idx - 1] > 1;
+                return (
+                  <span key={page} className="flex items-center">
+                    {showEllipsisBefore && (
+                      <span className="px-2 text-zinc-500">...</span>
+                    )}
+                    <button
+                      onClick={() => setCurrentPage(page)}
+                      className={`w-10 h-10 rounded-lg font-medium transition-colors ${
+                        currentPage === page
+                          ? 'bg-amber-500 text-black'
+                          : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  </span>
+                );
+              })}
+          </div>
+
+          <Button
+            variant="secondary"
+            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+            className="flex items-center gap-1"
+          >
+            Next
+            <ChevronRight className="w-4 h-4" />
+          </Button>
+        </div>
+      )}
 
       {/* Empty State */}
       {filteredRecipes.length === 0 && (
