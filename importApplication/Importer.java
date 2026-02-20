@@ -35,7 +35,7 @@ public class Importer {
             importRecipeIngredients(data.getAsJsonArray("recipe_ingredients"));
             importRecipeTools(data.getAsJsonArray("recipe_tools"));
             importDishCuisines(data.getAsJsonArray("dish_cuisines"));
-            importRestaurantMenu(data.getAsJsonArray("restaurant_menu"));
+            // importRestaurantMenu(data.getAsJsonArray("restaurant_menu"));
             importUserRatings(data.getAsJsonArray("user_ratings"));
             importStoreInventory(data.getAsJsonArray("store_inventory"));
             importDishPairings(data.getAsJsonArray("dish_pairings"));
@@ -119,16 +119,23 @@ public class Importer {
     private void importDishes(JsonArray dishes) {
         for (JsonElement element : dishes) {
             JsonObject dish = element.getAsJsonObject();
-            String dishName = dish.get( "dish_name").getAsString();
+            String dishName = dish.get("dish").getAsString();
             int servings = dish.get("serves").getAsInt();
-            String author = dish.get("creator_username").getAsString();
-            String RestName = dish.get("restaurant_name").getAsString();
+            String author = null;
+            if(!dish.get("creator_username").isJsonNull()){
+                author = dish.get("creator_username").getAsString();
+            }
+            String restName = null;
+            if(!dish.get("restaurant_name").isJsonNull()){
+                restName = dish.get("restaurant_name").getAsString();
+            }
             String type = dish.get("category").getAsString();
             int calorie = dish.get("calorie_count").getAsInt();
             String summary = dish.get("summary").getAsString();
             int minutes = dish.get("cook_minutes").getAsInt();
             String steps = dish.get("steps").getAsString();
-            dbAdder.newRecipe(dishName, servings, author, RestName, type, calorie, summary, minutes, steps);
+
+            dbAdder.newRecipe(dishName, servings, author, restName, type, calorie, summary, minutes, steps);
             System.out.println("Added recipe: " + dishName);
         }
     }
@@ -177,16 +184,16 @@ public class Importer {
         }
     }
 
-    private void importRestaurantMenu(JsonArray menu) {
-        for (JsonElement element : menu) {
-            JsonObject m = element.getAsJsonObject();
-            String restaurantName = m.get("restaurant").getAsString();
-            String dishName = m.get("dish").getAsString();
-            String price = m.get("menu_price").getAsString();
-            // Link restaurant to recipe - requires IDs from database
-            System.out.println("Processing menu item: " + restaurantName + " - " + dishName + " - " + price);
-        }
-    }
+    // private void importRestaurantMenu(JsonArray menu) {
+    //     for (JsonElement element : menu) {
+    //         JsonObject m = element.getAsJsonObject();
+    //         String restaurantName = m.get("restaurant").getAsString();
+    //         String dishName = m.get("dish").getAsString();
+    //         String price = m.get("menu_price").getAsString();
+    //         // Link restaurant to recipe - requires IDs from database
+    //         System.out.println("Processing menu item: " + restaurantName + " - " + dishName + " - " + price);
+    //     }
+    // }
 
     private void importUserRatings(JsonArray ratings) {
         for (JsonElement element : ratings) {

@@ -90,7 +90,7 @@
     { "item_name": "Cilantro", "category": "Herb", "notes": "Fresh herb common in Mexican and Asian dishes" },
     { "item_name": "Jalapeno", "category": "Pepper", "notes": "Medium-heat green chili pepper" },
     { "item_name": "Avocado", "category": "Fruit", "notes": "Creamy fruit rich in healthy fats" },
-    { "item_name": "Cumin", "category": "Spice", "notes": "Earthy spice essential in many cuisines" }, 
+    { "item_name": "Cumin", "category": "Spice", "notes": "Earthy spice essential in many cuisines" },  
     { "item_name": "Paprika", "category": "Spice", "notes": "Ground red pepper with sweet or smoky flavor" },
     { "item_name": "Cinnamon", "category": "Spice", "notes": "Warm spice from tree bark" },
     { "item_name": "Vanilla Extract", "category": "Flavoring", "notes": "Flavoring made from vanilla beans" },
@@ -373,45 +373,30 @@
 
   "recipe_ingredients": [
     { "dish": "Classic Beef Steak", "ingredient": "Ribeye Steak", "amount": "2 steaks" },
-    { "dish": "Truffle Risotto", "ingredient": "Arborio Rice", "amount": "2 cups" },
-    { "dish": "Paella Valenciana", "ingredient": "Saffron", "amount": "1 tsp" },
-    { "dish": "Truffle Risotto", "tool": "Wooden Spoon" },
-    { "dish": "Truffle Risotto", "tool": "Ladle" },
-    { "dish": "Chocolate Lava Cake", "tool": "Saucepan" },
-    { "dish": "Chocolate Lava Cake", "tool": "Whisk" },
-    { "dish": "Chocolate Lava Cake", "tool": "Mixing Bowls" },
-    { "dish": "Chocolate Lava Cake", "tool": "Ramekins" },
-    { "dish": "Caesar Salad", "tool": "Chef's Knife" },
-    { "dish": "Caesar Salad", "tool": "Cutting Board" },
-    { "dish": "Caesar Salad", "tool": "Mixing Bowls" },
     { "dish": "Classic Beef Steak", "ingredient": "Butter", "amount": "2 tbsp" },
     { "dish": "Classic Beef Steak", "ingredient": "Sea Salt", "amount": "to taste" },
     { "dish": "Classic Beef Steak", "ingredient": "Black Pepper", "amount": "to taste" },
+
     { "dish": "Truffle Risotto", "ingredient": "Arborio Rice", "amount": "2 cups" },
     { "dish": "Truffle Risotto", "ingredient": "Black Truffle", "amount": "1 oz" },
     { "dish": "Truffle Risotto", "ingredient": "Parmesan Cheese", "amount": "1 cup grated" },
     { "dish": "Truffle Risotto", "ingredient": "Butter", "amount": "3 tbsp" },
     { "dish": "Truffle Risotto", "ingredient": "Beef Broth", "amount": "4 cups" },
     { "dish": "Truffle Risotto", "ingredient": "White Wine", "amount": "1/2 cup" },
+
     { "dish": "Chocolate Lava Cake", "ingredient": "Dark Chocolate", "amount": "4 oz" },
     { "dish": "Chocolate Lava Cake", "ingredient": "Butter", "amount": "4 tbsp" },
     { "dish": "Chocolate Lava Cake", "ingredient": "Eggs", "amount": "2 whole" },
     { "dish": "Chocolate Lava Cake", "ingredient": "Granulated Sugar", "amount": "1/4 cup" },
     { "dish": "Chocolate Lava Cake", "ingredient": "All-Purpose Flour", "amount": "2 tbsp" },
+
     { "dish": "Caesar Salad", "ingredient": "Romaine Lettuce", "amount": "1 head" },
     { "dish": "Caesar Salad", "ingredient": "Anchovy", "amount": "2 fillets" },
     { "dish": "Caesar Salad", "ingredient": "Parmesan Cheese", "amount": "1/2 cup shaved" },
     { "dish": "Caesar Salad", "ingredient": "Garlic", "amount": "2 cloves" },
     { "dish": "Caesar Salad", "ingredient": "Eggs", "amount": "1 yolk" },
-    { "dish": "Truffle Risotto", "tool": "Wooden Spoon" },
-    { "dish": "Truffle Risotto", "tool": "Ladle" },
-    { "dish": "Chocolate Lava Cake", "tool": "Saucepan" },
-    { "dish": "Chocolate Lava Cake", "tool": "Whisk" },
-    { "dish": "Chocolate Lava Cake", "tool": "Mixing Bowls" },
-    { "dish": "Chocolate Lava Cake", "tool": "Ramekins" },
-    { "dish": "Caesar Salad", "tool": "Chef's Knife" },
-    { "dish": "Caesar Salad", "tool": "Cutting Board" },
-    { "dish": "Caesar Salad", "tool": "Mixing Bowls" }
+
+    { "dish": "Paella Valenciana", "ingredient": "Saffron", "amount": "1 tsp" }
   ],
 
   "recipe_tools": [
